@@ -7,6 +7,7 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 			$frmUpdateBooking = $('#frmUpdateBooking'),
 			$dialogSelect = $("#dialogSelect"),
 			$dialogDeleteNameSign = $("#dialogDeleteNameSign"),
+			$dialogSendWhatsappMessage = $("#dialogSendWhatsappMessage"),
 			dialog = ($.fn.dialog !== undefined),
 			datepicker = ($.fn.datepicker !== undefined),
 			datagrid = ($.fn.datagrid !== undefined),
@@ -195,7 +196,6 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 				                                                                                     {label: myLabel.pending, value: "pending"},
 				                                                                                     {label: myLabel.in_progress, value: "in_progress"}, 
 				                                                                                     {label: myLabel.confirmed, value: "confirmed"},
-				                                                                                     {label: myLabel.passed_on, value: "passed_on"},
 				                                                                                     {label: myLabel.cancelled, value: "cancelled"}
 				                                                                                     ], applyClass: "pj-status"}],
 				dataUrl: "index.php?controller=pjAdminBookings&action=pjActionGetBooking" + pjGrid.queryString,
@@ -227,6 +227,9 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 					  var $row = $('[data-id="id_'+item.id+'"]');
 					  if (item.booking_color != '') {
 						  $row.find('td:first-child').css('border-left', '5px solid '+item.booking_color);
+					  }
+					  if (item.double_bookings > 0) {
+						  $row.find('td').css('background', '#fce8cd');
 					  }
 					});
 				}
@@ -591,6 +594,19 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 			}
 			$dialogDeleteNameSign.data('id', $(this).attr('data-id')).dialog('open');
 			return false;
+		}).on("click", ".btnCreateInvoice", function () {
+			$("#frmCreateInvoice").trigger("submit");
+		}).on("click", ".action-link-send-whatsapp", function (e) {
+			if (e && e.preventDefault) {
+				e.preventDefault();
+			}
+			var $href = $(this).attr('data-href');
+			$.get($href, function(data) {
+				$('#dialogSendWhatsappMessageContent').html(data);
+				$dialogSendWhatsappMessage.dialog('open');
+			});
+			
+			return false;
 		});
 
 		$("#grid").on("click", 'ul.pj-menu-list li:nth-child(3) a', function (e) {
@@ -748,5 +764,215 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 			});
 		}
         
+        if ($("#grid_invoices").length > 0 && datagrid) {
+        	function formatTotal(val, obj) {
+    			return obj.total_formated;
+    		}
+        	
+        	function formatDefault (str) {
+    			return myLabel[str] || str;
+    		}
+    		
+    		function formatId (str) {
+    			return ['<a href="index.php?controller=pjInvoice&action=pjActionUpdate&id=', str, '">#', str, '</a>'].join("");
+    		}
+    		
+    		function formatCreated(str) {
+    			if (str === null || str.length === 0) {
+    				return myLabel.empty_datetime;
+    			}
+    			
+    			if (str === '0000-00-00 00:00:00') {
+    				return myLabel.invalid_datetime;
+    			}
+    			
+    			if (str.match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/) !== null) {
+    				var x = str.split(" "),
+    					date = x[0],
+    					time = x[1],
+    					dx = date.split("-"),
+    					tx = time.split(":"),
+    					y = dx[0],
+    					m = parseInt(dx[1], 10) - 1,
+    					d = dx[2],
+    					hh = tx[0],
+    					mm = tx[1],
+    					ss = tx[2];
+    				return $.datagrid.formatDate(new Date(y, m, d, hh, mm, ss), pjGrid.jsDateFormat + ", hh:mm:ss");
+    			}
+    		}
+    		
+    		var $grid_invoices = $("#grid_invoices").datagrid({
+				buttons: [{type: "edit", url: "index.php?controller=pjInvoice&action=pjActionUpdate&id={:id}", title: "Edit"},
+				          {type: "delete", url: "index.php?controller=pjInvoice&action=pjActionDelete&id={:id}", title: "Delete"}],
+				columns: [
+				    {text: myLabel.num, type: "text", sortable: true, editable: false, renderer: formatId},
+				    {text: myLabel.order_id, type: "text", sortable: true, editable: false},
+				    {text: myLabel.issue_date, type: "date", sortable: true, editable: false, renderer: $.datagrid._formatDate, dateFormat: pjGrid.jsDateFormat},
+				    {text: myLabel.due_date, type: "date", sortable: true, editable: false, renderer: $.datagrid._formatDate, dateFormat: pjGrid.jsDateFormat},
+				    {text: myLabel.created, type: "text", sortable: true, editable: false, renderer: formatCreated},
+				    {text: myLabel.status, type: "text", sortable: true, editable: false, renderer: formatDefault},	
+				    {text: myLabel.total, type: "text", sortable: true, editable: false, align: "right", renderer: formatTotal}
+				],
+				dataUrl: "index.php?controller=pjInvoice&action=pjActionGetInvoices&q=" + $frmUpdateBooking.find("input[name='uuid']").val(),
+				dataType: "json",
+				fields: ['id', 'order_id', 'issue_date', 'due_date', 'created', 'status', 'total'],
+				paginator: {
+					actions: [
+					   {text: myLabel.delete_title, url: "index.php?controller=pjInvoice&action=pjActionDeleteBulk", render: true, confirmation: myLabel.delete_body}
+					],
+					gotoPage: true,
+					paginate: true,
+					total: true,
+					rowCount: true
+				},
+				select: {
+					field: "id",
+					name: "record[]"
+				}
+			});
+        }
+        
+        $(document).ready(function() {
+            $('.collapse-header').on('click', function() {
+                var $header = $(this);
+                var targetId = $header.data('target');
+                var $content = $(targetId);
+
+                $content.slideToggle(300); 
+
+                $header.toggleClass('active');
+            });
+            
+            if (chosen) {
+	            const statusColors = {
+	                'pending': { code: '#F97316', class: 'is-pending' },      
+	                'in_progress': { code: '#EF4444', class: 'is-progress' }, 
+	                'confirmed': { code: '#10B981', class: 'is-confirmed' },  
+	                'cancelled': { code: '#6B7280', class: 'is-cancelled' }   
+	            };
+	            $(".status-select").chosen({
+	                width: "100%",
+	                disable_search_threshold: 10 
+	            });
+	            $(".status-return-select").chosen({
+	                width: "100%",
+	                disable_search_threshold: 10 
+	            });
+	            var $statusContainer = $('.pj-status-color');
+	            
+	            $statusContainer.find('.status-select option').each(function(index) {
+	                const option = $(this);
+	                const value = option.val();
+	                if (value && statusColors[value]) {
+	                    const colorData = statusColors[value];
+	                    $('#status_chzn_o_' + index).addClass(colorData.class);
+	                    if ($(this).hasClass('.result-selected')) {
+		                    const chosenSingle = $statusContainer.find('#status_chzn .chzn-single');
+		                    chosenSingle.addClass(colorData.class);
+	                    }
+	                }
+	            });
+	            
+	            $statusContainer.find('.status-select').on('change', function() {
+	                const selectedValue = $(this).val();
+	                const chosenSingleA = $statusContainer.find('#status_chzn .chzn-single');
+	                if (selectedValue && statusColors[selectedValue]) {
+	                    const colorData = statusColors[selectedValue];
+	                    chosenSingleA.removeClass('is-pending')
+	                    	.removeClass('is-progress')
+	                    	.removeClass('is-confirmed')
+	                    	.removeClass('is-cancelled');
+	                    chosenSingleA.addClass(colorData.class);
+	                }
+	            }).trigger('change');
+	            
+	            // status return
+	            var $statusReturnContainer = $('.pj-status-return-color');
+	            $statusReturnContainer.find('.status-return-select option').each(function(index) {
+	                const option = $(this);
+	                const value = option.val();
+	                if (value && statusColors[value]) {
+	                    const colorData = statusColors[value];
+	                    $('#status_return_trip_chzn_o_' + index).addClass(colorData.class);
+	                    if ($(this).hasClass('.result-selected')) {
+		                    const chosenSingle = $statusContainer.find('#status_return_trip_chzn .chzn-single');
+		                    chosenSingle.addClass(colorData.class);
+	                    }
+	                }
+	            });
+	            
+	            $statusReturnContainer.find('.status-return-select').on('change', function() {
+	                const selectedValue = $(this).val();
+	                const chosenSingleA = $statusReturnContainer.find('#status_return_trip_chzn .chzn-single');
+	                if (selectedValue && statusColors[selectedValue]) {
+	                    const colorData = statusColors[selectedValue];
+	                    chosenSingleA.removeClass('is-pending')
+	                	.removeClass('is-progress')
+	                	.removeClass('is-confirmed')
+	                	.removeClass('is-cancelled');
+	                    chosenSingleA.addClass(colorData.class);
+	                }
+	            }).trigger('change');
+            }
+        });
+        
+        $(document).on("click", ".btnStartUpdateLatLng", function (e) {
+			if (e && e.preventDefault) {
+				e.preventDefault();
+			}
+			startUpdateLatLng();
+		});
+        function startUpdateLatLng($page=1) {
+			$('.pjUpdateLatLngWrapper').html('Please wait while updating....Do not refresh page.');
+			$.get("index.php?controller=pjAdminBookings&action=pjActionProcessUpdateLatLng&page=" + $page, function(data) {
+				if (data.next_page <= myLabel.totalPages) {
+					startUpdateLatLng(data.next_page);
+				} else {
+					$('.pjUpdateLatLngWrapper').html('Bookings have been updated!');
+				}
+			});
+		}
+        
+        if ($dialogSendWhatsappMessage.length > 0 && dialog) {
+        	$dialogSendWhatsappMessage.on("change", "select[name='locale_id']", function (e) {
+    			if (e && e.preventDefault) {
+    				e.preventDefault();
+    			}
+    			var $id = $('#frmSendWs').find('input[name="id"]').val(),
+	    			$booking_id = $('#frmSendWs').find('input[name="booking_id"]').val(),
+	    			$locale_id = $(this).val(),
+	    			$href = 'index.php?controller=pjAdminBookings&action=pjActionWhatsapp&id='+$id+'&booking_id='+$booking_id+'&locale_id=' + $locale_id;
+    			$.get($href, function(data) {
+    				$('#dialogSendWhatsappMessageContent').html(data);
+    			});
+    			
+    			return false;
+    		})
+        	$dialogSendWhatsappMessage.dialog({
+				modal: true,
+				resizable: false,
+				draggable: false,
+				autoOpen: false,
+				width: 500,
+				buttons: (function () {
+					var buttons = {};
+					buttons[myLabel.btnSend] = function () {
+						var $form = $dialogSendWhatsappMessage.find("form"),
+						$c_phone = $form.find('input[name="customer_phone"]').val(),
+						$text = $form.find('textarea[name="message"]').val();
+						$dialogSendWhatsappMessage.dialog("close");
+						var $href = 'https://wa.me/'+$c_phone+'?text='+$text;
+						window.open($href, '_blank');
+					};
+					buttons[myLabel.btnCancel] = function () {
+						$dialogSendWhatsappMessage.dialog("close");
+					};
+					
+					return buttons;
+				})()
+			});
+		}
+
 	});
 })(jQuery_1_8_2);

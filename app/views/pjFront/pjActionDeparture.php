@@ -230,12 +230,13 @@ $index = pjObject::escapeString($_GET['index']);
 		                    </div>
 	                <?php endif; ?>
 				<?php } ?>
-                
+                <div class="trCheckErrorMsg" align="right"></div>
                 <div class="actions">
                     <button type="submit" class="btn medium color right"><?php __('front_btn_continue'); ?></button>
                 </div>
+                
             
-                    </form>
+            </form>
         <?php else: ?>
             <div class="trSystemMessage"><?php __('front_error'); ?></div>
         <?php endif; ?>

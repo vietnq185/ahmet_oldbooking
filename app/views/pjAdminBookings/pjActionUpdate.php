@@ -22,7 +22,7 @@ if (isset($tpl['status']))
 	$date_time = pjUtil::formatDate(date('Y-m-d', strtotime($tpl['arr']['booking_date'])), 'Y-m-d', $tpl['option_arr']['o_date_format']) . ' ' . pjUtil::formatTime(date('H:i:s', strtotime($tpl['arr']['booking_date'])), 'H:i:s', $tpl['option_arr']['o_time_format']);
 
     $is_airport = intval(@$tpl['pickup_arr'][$tpl['arr']['location_id']]['is_airport']);
-	
+    $statuses = __('plugin_invoice_statuses', true);
 	pjUtil::printNotice(__('infoUpdateBookingTitle', true, false), __('infoUpdateBookingDesc', true, false)); 
 	?>
 
@@ -31,7 +31,8 @@ if (isset($tpl['status']))
 			<ul>
 				<li><a href="#tabs-1"><?php __('lblBookingDetails');?></a></li>
 				<?php if (empty($_GET['copy'])) { ?>
-					<li><a href="#tabs-2"><?php __('tabLog');?></a></li>
+					<li style="display: <?php echo pjObject::getPlugin('pjInvoice') !== NULL ? '' : 'none';?>"><a href="#tabs-2"><?php __('tabInvoices');?></a></li>
+					<li><a href="#tabs-3"><?php __('tabLog');?></a></li>
 				<?php } ?>
 			</ul>
 		
@@ -81,32 +82,7 @@ if (isset($tpl['status']))
 						<label class="title"><?php __('lblDistance'); ?>:</label>
 						<label id="tr_distance" class="content"><?php echo !empty($tpl['dropoff']['distance']) ? $tpl['dropoff']['distance'] . ' ' . strtolower(__('lblKm', true, false)) : null; ?></label>
 					</p>
-					<p>
-						<label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionPrint&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblPrintReservation'); ?></a></label>
-					</p>
-                    <p>
-                        <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailPaymentConfirmation&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendPaymentConfirmation'); ?></a></label>
-                    </p>
-                    <p>
-                        <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailPaymentLink&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendPaymentLink'); ?></a></label>
-                    </p>
-                    <p>
-                        <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailCancellation&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendCancellationEmail'); ?></a></label>
-                    </p>
-                    <p>
-                        <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientViaEmail'); ?></a></label>
-                    </p>
-                    <p>
-                        <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionSmsReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientViaSMS'); ?></a></label>
-                    </p>
-                    <?php if(!empty($tpl['arr']['return_date'])): ?>
-                        <p>
-                            <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailReturnReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientForReturnViaEmail'); ?></a></label>
-                        </p>
-                        <p>
-                            <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionSmsReturnReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientForReturnViaSMS'); ?></a></label>
-                        </p>
-                    <?php endif; ?>
+					
                     <p style="display: none;">
                         <label class="title"><?php __('lblDriver'); ?>:</label>
                         <select name="driver_id" id="driver_id" class="pj-form-field w300">
@@ -116,9 +92,7 @@ if (isset($tpl['status']))
                             <?php endforeach; ?>
                         </select>
                     </p>
-                    <p>
-                        <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailRating&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendRatingEmail'); ?></a></label>
-                    </p>
+                    
 					<?php if (empty($_GET['copy'])): ?>
 						<p>
 							<label class="title">
@@ -126,7 +100,9 @@ if (isset($tpl['status']))
 							</label>
 						</p>
 					<?php endif; ?>
-
+                    <p>
+                    	<label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionPrint&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblPrintReservation'); ?></a></label>
+                    </p>
 					<?php if (!empty($tpl['return_arr'])): ?>
 						<p>
 							<label class="title" style="width: 100%;"><a href="<?php echo PJ_INSTALL_URL; ?>index.php?controller=pjAdminBookings&action=pjActionPrintSingle&details&record=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblPrintReservationDetailsSingle2'); ?></a></label>
@@ -135,14 +111,51 @@ if (isset($tpl['status']))
 							<label class="title" style="width: 100%;"><a href="<?php echo PJ_INSTALL_URL; ?>index.php?controller=pjAdminBookings&action=pjActionPrintSingle&details&record=<?php echo $tpl['return_arr']['id']; ?>" target="_blank"><?php __('lblPrintReservationDetailsSingle3'); ?></a></label>
 						</p>
 					<?php endif; ?>
-					
-					<?php foreach ($tpl['email_theme_arr'] as $et) { ?>
-                    	<p>
-                            <label class="title" style="width: 100%;"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionCustomEmail&amp;id=<?php echo $et['id'];?>&amp;booking_id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php echo pjSanitize::html($et['name']); ?></a></label>
-                        </p>
-                    <?php } ?>
-
+                    
+                    <div class="action-container">
+                        <div class="collapse-header" data-target="#bookingConfirmationsContent">
+                            <?php __('tabBookingConfirmations');?>
+                            <span class="arrow-icon">></span>
+                        </div>
+                        <div class="action-content" id="bookingConfirmationsContent">
+                            <a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailPaymentConfirmation&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendPaymentConfirmation'); ?></a>
+                        	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailPaymentLink&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendPaymentLink'); ?></a>
+                        	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailCancellation&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendCancellationEmail'); ?></a>
+                        	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientViaEmail'); ?></a>
+                        	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionSmsReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientViaSMS'); ?></a>
+                        	<?php if(!empty($tpl['arr']['return_date'])): ?>
+                            	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailReturnReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientForReturnViaEmail'); ?></a>
+                            	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionSmsReturnReminder&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblRemindClientForReturnViaSMS'); ?></a>
+                            <?php endif; ?>
+                        	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailRating&amp;id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php __('lblSendRatingEmail'); ?></a>
+                        </div>
+                		<?php if ($tpl['email_theme_arr']) { ?>
+                            <div class="collapse-header" data-target="#customerEmailsContent">
+                                <?php __('tabCustomerEmails');?>
+                                <span class="arrow-icon">></span>
+                            </div>
+                            <div class="action-content" id="customerEmailsContent">
+                                <?php foreach ($tpl['email_theme_arr'] as $et) { ?>
+                                	<a class="action-link" href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionCustomEmail&amp;type=email&amp;id=<?php echo $et['id'];?>&amp;booking_id=<?php echo $tpl['arr']['id']; ?>" target="_blank"><?php echo pjSanitize::html($et['name']); ?></a>
+                                <?php } ?>
+                            </div>
+                    	<?php } ?>
+                    	
+                    	<?php if ($tpl['ws_arr']) { ?>
+                            <div class="collapse-header" data-target="#customerBookingWhatsappMessages">
+                                <?php __('lblBookingWhatsappMessages');?>
+                                <span class="arrow-icon">></span>
+                            </div>
+                            <div class="action-content" id="customerBookingWhatsappMessages">
+                                <?php foreach ($tpl['ws_arr'] as $wsm) { ?>
+                                	<a class="action-link action-link-send-whatsapp" href="javascript:void(0);" data-href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionWhatsapp&amp;id=<?php echo $wsm['id'];?>&amp;booking_id=<?php echo $tpl['arr']['id']; ?>"><?php echo pjSanitize::html($wsm['subject']); ?></a>
+                                <?php } ?>
+                            </div>
+                    	<?php } ?>
+                    	
+                    </div>
 				</div>
+				
 				<p>
 					<label class="title"><?php __('lblUniqueID');?>:</label>
 					<span class="inline-block">
@@ -419,35 +432,44 @@ if (isset($tpl['status']))
 						<input type="text" name="cc_code" id="cc_code" value="<?php echo pjSanitize::clean($tpl['arr']['cc_code']); ?>" class="pj-form-field w100" />
 					</span>
 				</p>
-				<div class="p">
-					<label class="title"><?php __('lblStatus'); ?></label>
-					<span class="inline-block">
-						<select name="status" id="status" class="pj-form-field w400 required">
-							<option value="">-- <?php __('lblChoose'); ?>--</option>
-							<?php
-							foreach (__('booking_statuses', true, false) as $k => $v)
-							{
-								?><option value="<?php echo $k; ?>"<?php echo $k == $tpl['arr']['status'] ? ' selected="selected"' : NULL; ?>><?php echo $v; ?></option><?php
-							}
-							?>
-						</select>
-					</span>
-				</div>
 				
-				<div class="p pjStatusReturnTrip trReturnDetails" style="display: <?php echo !empty($tpl['arr']['return_date']) ? null : 'none';?>">
-					<label class="title"><?php __('lblStatusReturnTrip'); ?></label>
-					<span class="inline-block">
-						<select name="status_return_trip" id="status_return_trip" class="pj-form-field w400 required">
-							<option value="">-- <?php __('lblChoose'); ?>--</option>
-							<?php
-							foreach (__('booking_statuses', true, false) as $k => $v)
-							{
-								?><option value="<?php echo $k; ?>"<?php echo $k == @$tpl['return_arr']['status'] ? ' selected="selected"' : NULL; ?>><?php echo $v; ?></option><?php
-							}
-							?>
-						</select>
-					</span>
-				</div>			
+				<div class="pj-status-container">
+    				<div class="p pj-status-color">
+    					<label class="title"><?php __('lblStatus'); ?></label>
+    					<span class="inline-block">
+    						<select data-placeholder="-- <?php __('lblChoose'); ?>--" name="status" id="status" class="pj-form-field w400 required chosen-select status-select">
+                                <option value="">-- <?php __('lblChoose'); ?>--</option>
+                                <?php
+    							foreach (__('booking_statuses', true, false) as $k => $v)
+    							{
+    							    if ($k == 'passed_on') {
+    							        continue;
+    							    }
+    							    ?><option value="<?php echo $k; ?>" <?php echo $k == $tpl['arr']['status'] ? ' selected="selected"' : NULL; ?>><?php echo $v; ?></option><?php
+    							}
+    							?>
+                            </select>
+    					</span>
+    				</div>
+				
+    				<div class="p pjStatusReturnTrip trReturnDetails pj-status-return-color" style="display: <?php echo !empty($tpl['arr']['return_date']) ? null : 'none';?>">
+    					<label class="title"><?php __('lblStatusReturnTrip'); ?></label>
+    					<span class="inline-block">
+    						<select data-placeholder="-- <?php __('lblChoose'); ?>--" name="status_return_trip" id="status_return_trip" class="pj-form-field w400 required chosen-select status-return-select">
+    							<option value="">-- <?php __('lblChoose'); ?>--</option>
+    							<?php
+    							foreach (__('booking_statuses', true, false) as $k => $v)
+    							{
+    							    if ($k == 'passed_on') {
+    							         continue;   
+    							    }
+    							    ?><option value="<?php echo $k; ?>" <?php echo $k == @$tpl['return_arr']['status'] ? ' selected="selected"' : NULL; ?>><?php echo $v; ?></option><?php
+    							}
+    							?>
+    						</select>
+    					</span>
+    				</div>	
+    			</div>		
 
 				<div class="float_left" style="width: 50%;">
                     <?php foreach($tpl['extra_arr'] as $index => $extra): ?>
@@ -794,15 +816,141 @@ if (isset($tpl['status']))
 			</form>
 		</div>
 		<?php if (empty($_GET['copy'])) { ?>
-    		<div id="tabs-2">
+			<div id="tabs-2">
+    			<?php
+				if (pjObject::getPlugin('pjInvoice') !== NULL)
+				{
+					?>
+					
+					<input type="button" class="pj-button btnCreateInvoice" value="<?php __('booking_create_invoice'); ?>" />
+					
+					<div id="grid_invoices" class="t10 b10"></div>
+				
+					<?php
+				}
+				?>
+    		</div>
+    		<div id="tabs-3">
     			<div id="grid_history" class="pj-grid-bookings"></div>
     		</div>
     	<?php } ?>
 	</div>
 	
+	<?php
+	if (pjObject::getPlugin('pjInvoice') !== NULL)
+	{
+	    $map = array(
+	        'confirmed' => 'paid',
+	        'cancelled' => 'cancelled',
+	        'in_progress' => 'not_paid',
+	        'passed_on' => 'not_paid',
+	        'pending' => 'not_paid'
+	    );
+	    $arr = $tpl['booking_arr'];
+	    if ($arr['status'] == 'confirmed' && !in_array($arr['payment_method'], array('creditcard_later', 'cash'))) {
+	        $paid_deposit = (float)$arr['deposit'];
+	        $amount_due = (float)$arr['total'] - $paid_deposit;
+	    } else {
+	        $paid_deposit = 0;
+	        $amount_due = (float)$arr['total'];
+	    }
+	    $sub_total_before_tax = pjAppController::getPriceBeforeTax($arr['sub_total'], $tpl['tax_percentage']);
+	    $tax = round((float)$arr['sub_total'] - (float)$sub_total_before_tax, 2, PHP_ROUND_HALF_UP);
+	    $idx = 0;
+		?>
+		<form action="<?php echo PJ_INSTALL_URL; ?>index.php" method="get" target="_blank" style="display: inline" id="frmCreateInvoice">
+			<input type="hidden" name="controller" value="pjInvoice" />
+			<input type="hidden" name="action" value="pjActionCreateInvoice" />
+			<input type="hidden" name="tmp" value="<?php echo md5(uniqid(rand(), true)); ?>" />
+			<input type="hidden" name="uuid" value="<?php echo pjUtil::uuid(); ?>" />
+			<input type="hidden" name="order_id" value="<?php echo pjSanitize::html($arr['uuid']); ?>" />
+			<input type="hidden" name="issue_date" value="<?php echo date('Y-m-d'); ?>" />
+			<input type="hidden" name="due_date" value="<?php echo date('Y-m-d'); ?>" />
+			<input type="hidden" name="status" value="<?php echo @$map[$arr['status']]; ?>" />
+			<input type="hidden" name="subtotal" value="<?php echo $sub_total_before_tax; ?>" />
+			<input type="hidden" name="discount" value="<?php echo $arr['discount']; ?>" />
+			<input type="hidden" name="voucher_code" value="<?php echo $arr['voucher_code']; ?>" />
+			<input type="hidden" name="tax" value="<?php echo $tax; ?>" />
+			<input type="hidden" name="shipping" value="0.00" />
+			<input type="hidden" name="total" value="<?php echo $arr['total']; ?>" />
+			<input type="hidden" name="paid_deposit" value="<?php echo $paid_deposit;?>" />
+			<input type="hidden" name="amount_due" value="<?php echo $amount_due;?>" />
+			<input type="hidden" name="currency" value="<?php echo pjSanitize::html($tpl['option_arr']['o_currency']); ?>" />
+			<input type="hidden" name="notes" value="<?php echo pjSanitize::html($arr['c_notes']); ?>" />
+			<input type="hidden" name="b_billing_address" value="<?php echo pjSanitize::html($arr['c_address']); ?>" />
+			<input type="hidden" name="b_name" value="<?php echo pjSanitize::html($arr['c_fname'].' '.$arr['c_lname']); ?>" />
+			<input type="hidden" name="b_address" value="<?php echo pjSanitize::html($arr['c_address']); ?>" />
+			<input type="hidden" name="b_street_address" value="" />
+			<input type="hidden" name="b_city" value="<?php echo pjSanitize::html($arr['c_city']); ?>" />
+			<input type="hidden" name="b_state" value="<?php echo pjSanitize::html($arr['c_state']); ?>" />
+			<input type="hidden" name="b_zip" value="<?php echo pjSanitize::html($arr['c_zip']); ?>" />
+			<input type="hidden" name="b_country" value="<?php echo pjSanitize::html($arr['c_country']); ?>" />
+			<input type="hidden" name="b_phone" value="<?php echo pjSanitize::html($arr['c_dialing_code'].$arr['c_phone']); ?>" />
+			<input type="hidden" name="b_email" value="<?php echo pjSanitize::html($arr['c_email']); ?>" />
+			<input type="hidden" name="b_url" value="" />
+			<input type="hidden" name="s_shipping_address" value="<?php echo $arr['c_destination_address']; ?>" />
+			<input type="hidden" name="s_name" value="<?php echo pjSanitize::html($arr['c_fname'].' '.$arr['c_lname']); ?>" />
+			<input type="hidden" name="s_address" value="<?php echo pjSanitize::html($arr['c_destination_address']); ?>" />
+			<input type="hidden" name="s_street_address" value="" />
+			<input type="hidden" name="s_city" value="<?php echo pjSanitize::html($arr['c_city']); ?>" />
+			<input type="hidden" name="s_state" value="<?php echo pjSanitize::html($arr['c_state']); ?>" />
+			<input type="hidden" name="s_zip" value="<?php echo pjSanitize::html($arr['c_zip']); ?>" />
+			<input type="hidden" name="s_phone" value="<?php echo pjSanitize::html($arr['c_dialing_code'].$arr['c_phone']); ?>" />
+			<input type="hidden" name="s_email" value="<?php echo pjSanitize::html($arr['c_email']); ?>" />
+			<input type="hidden" name="s_url" value="" />
+			
+			<?php
+			$items = array();
+			$car_info_arr = array();
+			$car_info_arr[] = __('front_vehicle', true).': '.pjSanitize::html($arr['fleet']);
+			$car_info_arr[] = __('front_date', true).': '.date($tpl['option_arr']['o_date_format'].', '.$tpl['option_arr']['o_time_format'], strtotime($arr['booking_date']));
+			if (!empty($arr['return_date'])) {
+			    $car_info_arr[] = __('booking_return_on', true).': '.date($tpl['option_arr']['o_date_format'].', '.$tpl['option_arr']['o_time_format'], strtotime($arr['return_date']));
+			}
+			$car_info_arr[] = __('front_cart_from', true).': '.pjSanitize::html($arr['location']);
+			$car_info_arr[] = __('front_cart_to', true).': '.pjSanitize::html($arr['dropoff']);
+			?>
+			<input type="hidden" name="items[<?php echo $idx; ?>][name]" value="<?php __('front_invoice_booking_details', true); ?>" />
+			<input type="hidden" name="items[<?php echo $idx; ?>][description]" value="<?php echo implode("\r\n", $car_info_arr); ?>" />
+			<input type="hidden" name="items[<?php echo $idx; ?>][qty]" value="1" />
+			<input type="hidden" name="items[<?php echo $idx; ?>][unit_price]" value="<?php echo $arr['sub_total']; ?>" />
+			<input type="hidden" name="items[<?php echo $idx; ?>][amount]" value="<?php echo $arr['sub_total']; ?>" />
+			<input type="hidden" name="items[<?php echo $idx; ?>][tax_id]" value="<?php echo $tpl['tax_id']; ?>" />
+			<?php 
+			if ($tpl['booking_extra_arr']) {
+			    foreach($tpl['booking_extra_arr'] as $extra)
+			    {
+			        $idx++;
+			        ?>
+			        <input type="hidden" name="items[<?php echo $idx; ?>][name]" value="<?php echo $extra['quantity'].' x '.pjSanitize::html(strip_tags($extra['name'])); ?>" />
+        			<input type="hidden" name="items[<?php echo $idx; ?>][description]" value="<?php echo pjSanitize::html($extra['info']); ?>" />
+        			<input type="hidden" name="items[<?php echo $idx; ?>][qty]" value="1" />
+        			<input type="hidden" name="items[<?php echo $idx; ?>][unit_price]" value="0.00" />
+        			<input type="hidden" name="items[<?php echo $idx; ?>][amount]" value="0.00" />
+			        <?php
+			    }
+			}
+			if ((float)$arr['credit_card_fee'] > 0) {
+			    $idx++;
+			    ?>
+			    <input type="hidden" name="items[<?php echo $idx; ?>][name]" value="<?php __('front_invoice_credit_card_fee', true); ?>" />
+    			<input type="hidden" name="items[<?php echo $idx; ?>][description]" value="" />
+    			<input type="hidden" name="items[<?php echo $idx; ?>][qty]" value="1" />
+    			<input type="hidden" name="items[<?php echo $idx; ?>][unit_price]" value="<?php echo (float)$extra['credit_card_fee'];?>" />
+    			<input type="hidden" name="items[<?php echo $idx; ?>][amount]" value="<?php echo (float)$extra['credit_card_fee'];?>" />
+			    <?php 
+			}
+			?>
+		</form>
+		<?php
+	}
+	?>
 	
 	<div id="dialogDeleteNameSign" title="<?php __('lblDeleteNameSign'); ?>" style="display: none">
 		<?php __('lblDeleteNameSignDesc'); ?>
+	</div>
+	<div id="dialogSendWhatsappMessage" title="<?php __('btnSendWS'); ?>" style="display: none">
+		<div id="dialogSendWhatsappMessageContent"></div>
 	</div>
 	
 	<script type="text/javascript">
@@ -813,15 +961,37 @@ if (isset($tpl['status']))
 	myLabel.duplicated_id = "<?php __('lblDuplicatedUniqueID');?>",
 	myLabel.loader = '<img src="<?php echo PJ_IMG_PATH;?>backend/pj-preloader.gif" />';
 	myLabel.btnDelete = "<?php __('btnDelete');?>";
+	myLabel.btnSend = "<?php __('btnSend');?>";
 	myLabel.btnCancel = "<?php __('btnCancel');?>";
 
 	var pjGrid = pjGrid || {};
+	pjGrid.jqDateFormat = "<?php echo pjUtil::jqDateFormat($tpl['option_arr']['o_date_format']); ?>";
+	pjGrid.jsDateFormat = "<?php echo pjUtil::jsDateFormat($tpl['option_arr']['o_date_format']); ?>";
 	pjGrid.queryString = "&booking_id=<?php echo $tpl['arr']['id'];?>";
 	myLabel.h_content = "<?php __('lblBokingHistoryContent', false, true); ?>";
 	myLabel.h_by = "<?php __('lblBokingHistoryBy', false, true); ?>";
 	myLabel.h_created = "<?php __('lblBokingHistoryCreated', false, true); ?>";
 	myLabel.delete_selected = "<?php __('delete_selected', false, true); ?>";
 	myLabel.delete_confirmation = "<?php __('delete_confirmation', false, true); ?>";
+
+	myLabel.num = "<?php __('plugin_invoice_i_num'); ?>";
+	myLabel.order_id = "<?php __('plugin_invoice_i_order_id'); ?>";
+	myLabel.issue_date = "<?php __('plugin_invoice_i_issue_date'); ?>";
+	myLabel.due_date = "<?php __('plugin_invoice_i_due_date'); ?>";
+	myLabel.created = "<?php __('plugin_invoice_i_created'); ?>";
+	myLabel.status = "<?php __('plugin_invoice_i_status'); ?>";
+	myLabel.total = "<?php __('plugin_invoice_i_total'); ?>";
+	myLabel.delete_title = "<?php __('plugin_invoice_i_delete_title'); ?>";
+	myLabel.delete_body = "<?php __('plugin_invoice_i_delete_body'); ?>";
+	myLabel.paid = "<?php echo $statuses['paid']; ?>";
+	myLabel.not_paid = "<?php echo $statuses['not_paid']; ?>";
+	myLabel.cancelled = "<?php echo $statuses['cancelled']; ?>";
+	myLabel.empty_date = "<?php __('gridEmptyDate'); ?>";
+	myLabel.invalid_date = "<?php __('gridInvalidDate'); ?>";
+	myLabel.empty_datetime = "<?php __('gridEmptyDatetime'); ?>";
+	myLabel.invalid_datetime = "<?php __('gridInvalidDatetime'); ?>";
+	myLabel.currency = "<?php echo $tpl['option_arr']['o_currency']; ?>";
+	myLabel.currencysign = "<?php echo pjUtil::getCurrencySign($tpl['option_arr']['o_currency'], false); ?>";
 	</script>
 	<?php
 }

@@ -157,10 +157,45 @@ class pjAdminBookings extends pjAdmin
 
 			$data = array();
 			
+			$tblBookingsTable = $pjBookingModel->getTable();
+			if (isset($_GET['date']) && !empty($_GET['date'])) { 
+    			$subquery = "(
+                            SELECT
+                                COUNT(tb.id)
+                            FROM
+                                `".$tblBookingsTable."` AS tb
+                            WHERE
+                                t1.id != tb.id
+                                AND LOWER(t1.status) != 'cancelled'
+                                AND LOWER(tb.status) != 'cancelled'
+                                AND NOT (
+                                    (tb.id = t1.return_id AND COALESCE(t1.return_id, 0) > 0) 
+                                    OR 
+                                    (t1.id = tb.return_id AND COALESCE(tb.return_id, 0) > 0)
+                                )
+                                AND 
+                                (
+                                    (
+                                        LOWER(TRIM(t1.c_email)) = LOWER(TRIM(tb.c_email)) 
+                                        AND t1.c_email IS NOT NULL AND t1.c_email != ''
+                                    )
+                                    OR
+                                    (
+                                        TRIM(CONCAT_WS(' ', t1.c_title, t1.c_fname, t1.c_lname)) = TRIM(CONCAT_WS(' ', tb.c_title, tb.c_fname, tb.c_lname))
+                                        AND TRIM(CONCAT_WS(' ', t1.c_title, t1.c_fname, t1.c_lname)) != ''
+                                    )
+                                )
+                                AND DATE(t1.booking_date) <= DATE(COALESCE(tb.return_date, tb.booking_date))
+                                AND DATE(COALESCE(t1.return_date, t1.booking_date)) >= DATE(tb.booking_date)
+                        ) AS double_bookings";
+			} else {
+			    $subquery = " 0 AS double_bookings";
+			}
+			
 			$data = $pjBookingModel
 				->select("t1.*, t2.content as fleet, t3.content as location, t4.content as dropoff, t5.duration, 
 						t6.uuid as uuid2, t6.id as id2, t8.content as location2, t7.content as dropoff2, t9.duration as duration2, 
-						t10.fname, t10.lname, t10.email,t10.phone, t11.color AS location_color")
+						t10.fname, t10.lname, t10.email,t10.phone, t11.color AS location_color,$subquery")
 				->orderBy("$column $direction")
 				->limit($rowCount, $offset)
 				->findAll()
@@ -228,7 +263,7 @@ class pjAdminBookings extends pjAdmin
 				if (!empty($v['notes_for_support'])) {
 				    $booking_color = '#D14936';
 				} else {
-				    $booking_color = '#';
+				    $booking_color = '';
 				}
 				$v['booking_color'] = $booking_color;
 				
@@ -482,7 +517,16 @@ class pjAdminBookings extends pjAdmin
 			if (isset($_POST['booking_create']))
 			{
 				$pjBookingModel = pjBookingModel::factory();
-				$dropoff_arr = pjDropoffModel::factory()->find($_POST['dropoff_id'])->getData();
+				
+				$pickup_arr = pjLocationModel::factory()->select('t1.*, t2.content AS pickup_location')
+				->join('pjMultiLang', "t2.model='pjLocation' AND t2.foreign_id=t1.id AND t2.field='pickup_location' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
+				->find($_POST['location_id'])
+				->getData();
+				
+				$dropoff_arr = pjDropoffModel::factory()->select('t1.*, t2.content AS dropoff_location')
+				->join('pjMultiLang', "t2.model='pjDropoff' AND t2.foreign_id=t1.id AND t2.field='location' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
+				->find($_POST['dropoff_id'])
+				->getData();
 				
 				$_date = $_POST['booking_date']; unset($_POST['booking_date']);
 				if(count(explode(" ", $_date)) == 3)
@@ -495,6 +539,37 @@ class pjAdminBookings extends pjAdmin
 				}
 
 				$data = array();
+				/* if (!empty($pickup_arr['region'])) {
+				    $pickup_latlng_arr = $this->getGeocode($pickup_arr['region']);
+				    $data['pickup_address'] = $pickup_arr['region'];
+				} else { 
+				    $pickup_latlng_arr = $this->getGeocode($pickup_arr['pickup_location']);
+				    $data['pickup_address'] = $pickup_arr['pickup_location'];
+				}
+				$data['pickup_lat'] = $pickup_latlng_arr['lat'];
+				$data['pickup_lng'] = $pickup_latlng_arr['lng'];
+				
+				if (!empty($dropoff_arr['region'])) {
+				    $dropoff_latlng_arr = $this->getGeocode($dropoff_arr['region']);
+				    $data['dropoff_address'] = $dropoff_arr['region'];
+				} else { 
+				    $dropoff_latlng_arr = $this->getGeocode($dropoff_arr['dropoff_location']);
+				    $data['dropoff_address'] = $dropoff_arr['dropoff_location'];
+				}
+				$data['dropoff_lat'] = $dropoff_latlng_arr['lat'];
+				$data['dropoff_lng'] = $dropoff_latlng_arr['lng']; */
+				
+				$data['pickup_address'] = $pickup_arr['address'];
+				$data['pickup_lat'] = $pickup_arr['lat'];
+				$data['pickup_lng'] = $pickup_arr['lng'];
+				
+				$data['dropoff_address'] = $dropoff_arr['address'];
+				$data['dropoff_lat'] = $dropoff_arr['lat'];
+				$data['dropoff_lng'] = $dropoff_arr['lng'];
+				
+				$data['duration'] = $dropoff_arr['duration'];
+				$data['distance'] = $dropoff_arr['distance'];
+				
 				$data['uuid'] = pjAppController::createRandomBookingId();
 				$data['ip'] = pjUtil::getClientIp();
 				$data['locale_id'] = $this->getLocaleId();
@@ -513,6 +588,8 @@ class pjAdminBookings extends pjAdmin
 				$data['pickup_google_map_link'] = $_POST['pickup_google_map_link'];
 				$data['dropoff_google_map_link'] = $_POST['dropoff_google_map_link'];
 				$data['notes_for_support'] = $_POST['notes_for_support'];
+				$data['region'] = $pickup_arr['region'];
+				$data['dropoff_region'] = $dropoff_arr['region'];
                 if(isset($_POST['has_return']))
                 {
                     if(count(explode(" ", $_POST['return_date'])) == 3)
@@ -600,8 +677,6 @@ class pjAdminBookings extends pjAdmin
 
 				if ($id !== false && (int) $id > 0)
 				{
-				    //$invoice_arr = $this->pjActionGenerateInvoice($id);
-				    
 				    $data_history = array(
 				        'booking_id' => $id,
 				        'action' => 'Booking created',
@@ -654,6 +729,8 @@ class pjAdminBookings extends pjAdmin
 
                         $data['ip'] = $arr['ip'];
                         $data['client_id'] = $arr['client_id'];
+                        $data['region'] = $dropoff_arr['region'];
+                        $data['dropoff_region'] = $pickup_arr['region'];
                         $return_id = $pjBookingModel->reset()->setAttributes($data)->insert()->getInsertId();
                     }
 
@@ -666,6 +743,8 @@ class pjAdminBookings extends pjAdmin
                             $pjBookingModel->reset()->set('id', $id)->modify(array('name_sign' => $file_path));
                         }
                     }
+                    
+                    //$invoice_arr = $this->pjActionGenerateInvoice($id);
 
                     if($data['driver_id'] != ':NULL' && $this->option_arr['o_email_driver'] == 1)
                     {
@@ -803,11 +882,14 @@ class pjAdminBookings extends pjAdmin
 			{
 				$pjBookingModel = pjBookingModel::factory();
 
-				$arr = $pjBookingModel
-				->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.fleet_id AND t2.field='fleet' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
-				->join('pjMultiLang', "t3.model='pjLocation' AND t3.foreign_id=t1.location_id AND t3.field='pickup_location' AND t3.locale='".$this->getLocaleId()."'", 'left outer')
-				->join('pjMultiLang', "t4.model='pjDropoff' AND t4.foreign_id=t1.dropoff_id AND t4.field='location' AND t4.locale='".$this->getLocaleId()."'", 'left outer')
-				->join('pjMultiLang', "t5.model='pjDropoff' AND t5.foreign_id=t1.dropoff_id AND t5.field='address' AND t5.locale='".$this->getLocaleId()."'", 'left outer')
+				$booking = $pjBookingModel->find($_POST['id'])->getData();
+				$locale_id = isset($booking['locale_id']) && (int)$booking['locale_id'] > 0 ? (int)$booking['locale_id'] : $this->getLocaleId();
+				
+				$arr = $pjBookingModel->reset()
+				->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.fleet_id AND t2.field='fleet' AND t2.locale='".$locale_id."'", 'left outer')
+				->join('pjMultiLang', "t3.model='pjLocation' AND t3.foreign_id=t1.location_id AND t3.field='pickup_location' AND t3.locale='".$locale_id."'", 'left outer')
+				->join('pjMultiLang', "t4.model='pjDropoff' AND t4.foreign_id=t1.dropoff_id AND t4.field='location' AND t4.locale='".$locale_id."'", 'left outer')
+				->join('pjMultiLang', "t5.model='pjDropoff' AND t5.foreign_id=t1.dropoff_id AND t5.field='address' AND t5.locale='".$locale_id."'", 'left outer')
 				->select("t1.*, t2.content as fleet, t3.content as location, CONCAT_WS(' - ', t4.content, t5.content) as dropoff")
 				->find($_POST['id'])
 				->getData();
@@ -831,10 +913,10 @@ class pjAdminBookings extends pjAdmin
 				if(!empty($arr['return_date']))
 				{
 				    $return_arr = $pjBookingModel->reset()
-				    ->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.fleet_id AND t2.field='fleet' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
-				    ->join('pjMultiLang', "t3.model='pjLocation' AND t3.foreign_id=t1.location_id AND t3.field='pickup_location' AND t3.locale='".$this->getLocaleId()."'", 'left outer')
-				    ->join('pjMultiLang', "t4.model='pjDropoff' AND t4.foreign_id=t1.dropoff_id AND t4.field='location' AND t4.locale='".$this->getLocaleId()."'", 'left outer')
-				    ->join('pjMultiLang', "t5.model='pjDropoff' AND t5.foreign_id=t1.dropoff_id AND t5.field='address' AND t5.locale='".$this->getLocaleId()."'", 'left outer')
+				    ->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.fleet_id AND t2.field='fleet' AND t2.locale='".$locale_id."'", 'left outer')
+				    ->join('pjMultiLang', "t3.model='pjLocation' AND t3.foreign_id=t1.location_id AND t3.field='pickup_location' AND t3.locale='".$locale_id."'", 'left outer')
+				    ->join('pjMultiLang', "t4.model='pjDropoff' AND t4.foreign_id=t1.dropoff_id AND t4.field='location' AND t4.locale='".$locale_id."'", 'left outer')
+				    ->join('pjMultiLang', "t5.model='pjDropoff' AND t5.foreign_id=t1.dropoff_id AND t5.field='address' AND t5.locale='".$locale_id."'", 'left outer')
 				    ->select("t1.*, t2.content as fleet, t3.content as location, CONCAT_WS(' - ', t4.content, t5.content) as dropoff")
 				    ->where('t1.return_id', $arr['id'])
 				    ->limit(1)
@@ -880,12 +962,52 @@ class pjAdminBookings extends pjAdmin
 				$data['customized_name_plate'] = $_POST['customized_name_plate'];
 				$data['notes_for_support'] = $_POST['notes_for_support'];
 
-                $dropoff_arr = pjDropoffModel::factory()->find($_POST['dropoff_id'])->getData();
-                $pickup_arr = pjLocationModel::factory()->find($_POST['location_id'])->getData();
+				$pickup_arr = pjLocationModel::factory()->select('t1.*, t2.content AS pickup_location')
+				->join('pjMultiLang', "t2.model='pjLocation' AND t2.foreign_id=t1.id AND t2.field='pickup_location' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
+				->find($_POST['location_id'])
+				->getData();
+				
+				$dropoff_arr = pjDropoffModel::factory()->select('t1.*, t2.content AS dropoff_location')
+				->join('pjMultiLang', "t2.model='pjDropoff' AND t2.foreign_id=t1.id AND t2.field='location' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
+				->find($_POST['dropoff_id'])
+				->getData();
+				
+				/* if (!empty($pickup_arr['region'])) {
+				    $pickup_latlng_arr = $this->getGeocode($pickup_arr['region']);
+				    $data['pickup_address'] = $pickup_arr['region'];
+				} else {
+				    $pickup_latlng_arr = $this->getGeocode($pickup_arr['pickup_location']);
+				    $data['pickup_address'] = $pickup_arr['pickup_location'];
+				}
+				$data['pickup_lat'] = $pickup_latlng_arr['lat'];
+				$data['pickup_lng'] = $pickup_latlng_arr['lng'];
+				
+				if (!empty($dropoff_arr['region'])) {
+				    $dropoff_latlng_arr = $this->getGeocode($dropoff_arr['region']);
+				    $data['dropoff_address'] = $dropoff_arr['region'];
+				} else {
+				    $dropoff_latlng_arr = $this->getGeocode($dropoff_arr['dropoff_location']);
+				    $data['dropoff_address'] = $dropoff_arr['dropoff_location'];
+				}
+				$data['dropoff_lat'] = $dropoff_latlng_arr['lat'];
+				$data['dropoff_lng'] = $dropoff_latlng_arr['lng']; */
+				
+				$data['pickup_address'] = $pickup_arr['address'];
+				$data['pickup_lat'] = $pickup_arr['lat'];
+				$data['pickup_lng'] = $pickup_arr['lng'];
+				
+				$data['dropoff_address'] = $dropoff_arr['address'];
+				$data['dropoff_lat'] = $dropoff_arr['lat'];
+				$data['dropoff_lng'] = $dropoff_arr['lng'];
+                
+                $data['duration'] = $dropoff_arr['duration'];
+                $data['distance'] = $dropoff_arr['distance'];
                 
 				$is_airport = pjLocationModel::factory()->reset()->where('id', $data['location_id'])->where('is_airport', 1)->findCount()->getData();
 				$data['pickup_is_airport'] = $pickup_arr['is_airport'];
 				$data['dropoff_is_airport'] = $dropoff_arr['is_airport'];
+				$data['region'] = $pickup_arr['region'];
+				$data['dropoff_region'] = $dropoff_arr['region'];
 				if (!$is_airport && $dropoff_arr['is_airport'] == 0) {
 					$data['c_address'] = $_POST['cl_address'];
 					$data['c_destination_address'] = $_POST['cl_destination_address'];
@@ -988,6 +1110,8 @@ class pjAdminBookings extends pjAdmin
 					$data['internal_notes'] = $_POST['return_internal_notes'];
 					$data['pickup_is_airport'] = $dropoff_arr['is_airport'];
 					$data['dropoff_is_airport'] = $pickup_arr['is_airport'];
+					$data['region'] = $dropoff_arr['region'];
+					$data['dropoff_region'] = $pickup_arr['region'];
                     if (!$is_airport && $dropoff_arr['is_airport'] == 0) {
                     	 $data['c_address'] = $_POST['return_cl_address'];
                     	 $data['c_destination_address'] = $_POST['return_cl_destination_address'];
@@ -1236,10 +1360,16 @@ class pjAdminBookings extends pjAdmin
 				
 				pjUtil::redirect(PJ_INSTALL_URL. "index.php?controller=pjAdminBookings&action=pjActionIndex&err=$err");
 			}else{
+			    $pjBookingModel = pjBookingModel::factory();
                 // TODO: If it comes from the calendar in Dashboard and if the ID is for a return booking (without UUID etc) we should redirect to the first booking
-				$arr = pjBookingModel::factory()
-					->find($_GET['id'])
-					->getData();
+			    if (isset($_REQUEST['id']) && (int) $_REQUEST['id'] > 0)
+			    {
+			        $pjBookingModel->where('t1.id', $_REQUEST['id']);
+			    } elseif (isset($_GET['uuid']) && !empty($_GET['uuid'])) {
+			        $pjBookingModel->where('t1.uuid', $_GET['uuid']);
+			    }
+			    
+			    $arr = $pjBookingModel->limit(1)->findAll()->getDataIndex(0);
 
 				if(count($arr) <= 0)
 				{
@@ -1262,7 +1392,7 @@ class pjAdminBookings extends pjAdmin
                 $return_arr = array();
                 if(!empty($arr['return_date']))
                 {
-                    $return_arr = pjBookingModel::factory()
+                    $return_arr = pjBookingModel::factory()->reset()
                         ->where('return_id', $arr['id'])
                         ->findAll()
                         ->getDataIndex(0);
@@ -1319,8 +1449,52 @@ class pjAdminBookings extends pjAdmin
 				    ->join('pjMultiLang', "t2.model='pjEmailTheme' AND t2.foreign_id=t1.id AND t2.field='name' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
 				    ->select("t1.*, t2.content as name")
 				    ->where('t1.status', 'T')
+				    ->where('t1.type', 'custom')
 				    ->orderBy("name ASC")
 				    ->findAll()->getData());
+				
+				//$invoice_arr = $this->pjActionGenerateInvoice($arr['id']);
+				
+				$booking_arr = pjBookingModel::factory()->reset()
+				->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.fleet_id AND t2.field='fleet' AND t2.locale=t1.locale_id", 'left outer')
+				->join('pjMultiLang', "t3.model='pjLocation' AND t3.foreign_id=t1.location_id AND t3.field='pickup_location' AND t3.locale=t1.locale_id", 'left outer')
+				->join('pjMultiLang', "t4.model='pjDropoff' AND t4.foreign_id=t1.dropoff_id AND t4.field='location' AND t4.locale=t1.locale_id", 'left outer')
+				->select("t1.*, t2.content as fleet, t3.content as location, t4.content as dropoff")
+				->find($arr['id'])
+				->getData();
+				
+				$booking_extra_arr = pjBookingExtraModel::factory()->reset()
+				->select('t1.*, t2.content as name, t3.content as info')
+				->join('pjMultiLang', "t2.model='pjExtra' AND t2.foreign_id=t1.extra_id AND t2.field='name' AND t2.locale='".$arr['locale_id']."'", 'left outer')
+				->join('pjMultiLang', "t3.model='pjExtra' AND t3.foreign_id=t1.extra_id AND t3.field='info' AND t3.locale='".$arr['locale_id']."'", 'left outer')
+				->where('t1.booking_id', $arr['id'])
+				->findAll()
+				->getData();
+				$this->set('booking_arr', $booking_arr);
+				$this->set('booking_extra_arr', $booking_extra_arr);
+				
+				$invoice_tax_arr = pjInvoiceTaxModel::factory()->where('t1.is_default', 1)->limit(1)->findAll()->getDataIndex(0);
+				$tax = $tax_percentage = 0;
+				$tax_id = ':NULL';
+				if ($invoice_tax_arr) {
+				    $tax_percentage = $invoice_tax_arr['tax'];
+				    $tax_id = $invoice_tax_arr['id'];
+				}
+				$this->set('tax_percentage', $tax_percentage);
+				$this->set('tax_id', $tax_id);
+				
+				$pjWhatsappMessageModel = pjWhatsappMessageModel::factory();
+				if ($this->isEditor()) {
+				    $pjWhatsappMessageModel->whereIn('t1.available_for', array('both','reservation_manager'));
+				} else {
+				    $pjWhatsappMessageModel->whereIn('t1.available_for', array('both','admin'));
+				}
+				$ws_arr = $pjWhatsappMessageModel->join('pjMultiLang', "t2.model='pjWhatsappMessage' AND t2.foreign_id=t1.id AND t2.field='subject' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
+				->select("t1.*, t2.content as subject")
+				->where('t1.status', 'T')
+				->orderBy("t1.order ASC, subject ASC")
+				->findAll()->getData();
+				$this->set('ws_arr', $ws_arr);
 
 				$this->appendJs('chosen.jquery.min.js', PJ_THIRD_PARTY_PATH . 'chosen/');
 				$this->appendCss('chosen.css', PJ_THIRD_PARTY_PATH . 'chosen/');
@@ -1465,13 +1639,18 @@ class pjAdminBookings extends pjAdmin
 				$result = $this->requestAction(array('controller' => 'pjSms', 'action' => 'pjActionSend', 'params' => $params), array('return'));*/
 				
 				$result = $this->messagebirdSendSMS(array($_POST['to']), $_POST['i18n'][$locale_id]['message'], $this->option_arr);
-
-				if (isset($result) && (int) $result === 1)
-				{
-					$err = 'AB11';
-				}else{
-					$err = 'AB12';
+				if ($result) {
+				    $data_log = array(
+				        'booking_id' => $_POST['id'],
+				        'action' => $_POST['i18n'][$locale_id]['message'],
+				        'user_id' => $this->getUserId()
+				    );
+				    pjBookingHistoryModel::factory()->setAttributes($data_log)->insert();
+				    $err = 'AB11';
+				} else {
+				    $err = 'AB12';
 				}
+				
 				pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionUpdate&id=".$_POST['id']."&err=$err");
 			} else {
 
@@ -1816,10 +1995,15 @@ class pjAdminBookings extends pjAdmin
                 $result = $this->requestAction(array('controller' => 'pjSms', 'action' => 'pjActionSend', 'params' => $params), array('return'));*/
 
                 $result = $this->messagebirdSendSMS(array($_POST['to']), $_POST['i18n'][$locale_id]['message'], $this->option_arr);
-                if (isset($result) && (int) $result === 1)
-                {
+                if ($result) {
+                    $data_log = array(
+                        'booking_id' => $_POST['id'],
+                        'action' => $_POST['i18n'][$locale_id]['message'],
+                        'user_id' => $this->getUserId()
+                    );
+                    pjBookingHistoryModel::factory()->setAttributes($data_log)->insert();
                     $err = 'AB11';
-                }else{
+                } else {
                     $err = 'AB12';
                 }
                 pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionUpdate&id=".$_POST['id']."&err=$err");
@@ -2142,11 +2326,15 @@ class pjAdminBookings extends pjAdmin
                 $result = $this->requestAction(array('controller' => 'pjSms', 'action' => 'pjActionSend', 'params' => $params), array('return'));*/
                 
                 $result = $this->messagebirdSendSMS(array($_POST['to']), $_POST['i18n'][$locale_id]['message'], $this->option_arr);
-
-                if (isset($result) && (int) $result === 1)
-                {
+                if ($result) {
+                    $data_log = array(
+                        'booking_id' => $_POST['id'],
+                        'action' => $_POST['i18n'][$locale_id]['message'],
+                        'user_id' => $this->getUserId()
+                    );
+                    pjBookingHistoryModel::factory()->setAttributes($data_log)->insert();
                     $err = 'AB11';
-                }else{
+                } else {
                     $err = 'AB12';
                 }
                 pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionUpdate&id=".$_POST['id']."&err=$err");
@@ -2532,12 +2720,21 @@ class pjAdminBookings extends pjAdmin
                     ;
                 }
                 $locale_id = isset($_POST['locale_id']) && (int)$_POST['locale_id'] > 0 ? (int)$_POST['locale_id'] : $this->getLocaleId();
-                $pjEmail->setContentType('text/html');
+                if (isset($_GET['type']) && $_GET['type'] == 'note') {
+                    $pjEmail->setContentType('text/plain');
+                } else { 
+                    $pjEmail->setContentType('text/html');
+                }
                 $pjEmail
                 ->setTo($_POST['to'])
                 ->setFrom($this->getAdminEmail(), $this->option_arr['o_email_sender'])
                 ->setSubject($_POST['i18n'][$locale_id]['subject']);
-                if ($pjEmail->send(pjAppController::getEmailBody($_POST['i18n'][$locale_id]['message'])))
+                if (isset($_GET['type']) && $_GET['type'] == 'note') {
+                    $body = $_POST['i18n'][$locale_id]['message'];
+                } else { 
+                    $body = pjAppController::getEmailBody($_POST['i18n'][$locale_id]['message']);
+                }
+                if ($pjEmail->send($body))
                 {
                     $data_history = array(
                         'booking_id' => $_POST['id'],
@@ -2552,9 +2749,18 @@ class pjAdminBookings extends pjAdmin
                 }
                 pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionIndex&err=$err");
             } else {
-                $email_theme_arr = pjEmailThemeModel::factory()->find($_GET['id'])->getData();
-                if (!$email_theme_arr) {
-                    pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionUpdate&id=".$_GET['booking_id']);
+                if (isset($_GET['type']) && $_GET['type'] == 'note') {
+                    $note_arr = pjNoteModel::factory()->find($_GET['id'])->getData();
+                    if (!$note_arr) {
+                        pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionUpdate&id=".$_GET['booking_id']);
+                    }
+                    $i18n = pjMultiLangModel::factory()->getMultiLang($_GET['id'], 'pjNote');
+                } else { 
+                    $email_theme_arr = pjEmailThemeModel::factory()->find($_GET['id'])->getData();
+                    if (!$email_theme_arr) {
+                        pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionUpdate&id=".$_GET['booking_id']);
+                    }
+                    $i18n = pjMultiLangModel::factory()->getMultiLang($_GET['id'], 'pjEmailTheme');
                 }
                 $arr = pjBookingModel::factory()
                 ->select("t1.*, t2.content as fleet, t3.content as location, CONCAT_WS(' - ', t4.content, t5.content) as dropoff")
@@ -2572,7 +2778,6 @@ class pjAdminBookings extends pjAdmin
                 
                 $this->set('arr', $arr);
                 
-                $i18n = pjMultiLangModel::factory()->getMultiLang($_GET['id'], 'pjEmailTheme');
                 $locale_arr = pjLocaleModel::factory()->select('t1.*, t2.file')
                 ->join('pjLocaleLanguage', 't2.iso=t1.language_iso', 'left')
                 ->where('t2.file IS NOT NULL')
@@ -2678,6 +2883,113 @@ class pjAdminBookings extends pjAdmin
             }
         }
         exit;
+    }
+    
+    public function pjActionWhatsapp()
+    {
+        $this->setAjax(true);
+        
+        if ($this->isXHR())
+        {
+            $ws_arr = pjWhatsappMessageModel::factory()->find($_GET['id'])->getData();
+            $i18n = pjMultiLangModel::factory()->getMultiLang($_GET['id'], 'pjWhatsappMessage');
+            
+            $booking = pjBookingModel::factory()->find($_GET['booking_id'])->getData();
+            
+            if (isset($_GET['locale_id']) && (int)$_GET['locale_id'] > 0) {
+                $locale_id = (int)$_GET['locale_id'];
+            } else {
+                $locale_id = (int)$booking['locale_id'] > 0 ? (int)$booking['locale_id'] : $this->getLocaleId();
+            }
+            
+            $arr = pjBookingModel::factory()->reset()
+            ->select("t1.*, t2.content as fleet, t3.content as location, CONCAT_WS(' - ', t4.content, t5.content) as dropoff")
+            ->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.fleet_id AND t2.field='fleet' AND t2.locale='".$locale_id."'", 'left outer')
+            ->join('pjMultiLang', "t3.model='pjLocation' AND t3.foreign_id=t1.location_id AND t3.field='pickup_location' AND t3.locale='".$locale_id."'", 'left outer')
+            ->join('pjMultiLang', "t4.model='pjDropoff' AND t4.foreign_id=t1.dropoff_id AND t4.field='location' AND t4.locale='".$locale_id."'", 'left outer')
+            ->join('pjMultiLang', "t5.model='pjDropoff' AND t5.foreign_id=t1.dropoff_id AND t5.field='address' AND t5.locale='".$locale_id."'", 'left outer')
+            ->find($_GET['booking_id'])
+            ->getData();
+            
+            $locale_arr = pjLocaleModel::factory()->select('t1.*, t2.file')
+            ->join('pjLocaleLanguage', 't2.iso=t1.language_iso', 'left')
+            ->where('t2.file IS NOT NULL')
+            ->orderBy('t1.sort ASC')->findAll()->getData();
+            
+            $lang_message = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $locale_id), $i18n[$locale_id]['message']);
+            $this->set('lang_message', $lang_message);
+            $this->set('locale_arr', $locale_arr);
+            $this->set('ws_arr', $ws_arr);
+            $this->set('arr', $arr);
+            $this->set('locale_id', $locale_id);
+        }   
+    }
+    
+    public function pjActionUpdateLatLng()
+    {
+        $this->checkLogin();
+        
+        if ($this->isAdmin())
+        {
+            $pjBookingModel = pjBookingModel::factory();
+            
+            $today = date('Y-m-d');
+            $total = $pjBookingModel
+            ->where('(t1.pickup_lat="" OR t1.pickup_lat IS NULL OR t1.pickup_lng="" OR t1.pickup_lng IS NULL OR t1.dropoff_lat="" OR t1.dropoff_lat IS NULL OR t1.dropoff_lng="" OR t1.dropoff_lng IS NULL)')
+            ->where('DATE(t1.booking_date)>="'.$today.'"')
+            ->where('t1.status', 'confirmed')
+            ->findCount()->getData();
+            $rowCount = 15;
+            $pages = ceil($total / $rowCount);
+            $this->set('pages', $pages);
+            $this->set('total', $total);
+            
+            $this->appendJs('pjAdminBookings.js');
+        } else {
+            $this->set('status', 2);
+        }
+    }
+    
+    public function pjActionProcessUpdateLatLng() {
+        $this->setAjax(true);
+        $get = $_GET;
+        $pjBookingModel = pjBookingModel::factory();
+        $rowCount = 15;
+        $page = isset($get['page']) && (int) $get['page'] > 0 ? intval($get['page']) : 1;
+        $offset = ((int) $page - 1) * $rowCount;
+        $today = date('Y-m-d');
+        $data = $pjBookingModel->select('t1.*, t2.content AS pickup_location, t3.content AS dropoff_location, t4.duration, t4.distance, 
+            t5.address AS location_pickup_address, t5.lat AS location_pickup_lat, t5.lng AS location_pickup_lng,
+            t4.address AS location_dropoff_address, t4.lat AS location_dropoff_lat, t4.lng AS location_dropoff_lng
+        ')
+        ->join('pjMultiLang', "t2.model='pjLocation' AND t2.foreign_id=t1.location_id AND t2.field='pickup_location' AND t2.locale=t1.locale_id", 'left outer')
+        ->join('pjMultiLang', "t3.model='pjDropoff' AND t3.foreign_id=t1.dropoff_id AND t3.field='location' AND t3.locale=t1.locale_id", 'left outer')
+        ->join('pjDropoff', "t4.id=t1.dropoff_id", 'left outer')
+        ->join('pjLocation', "t5.id=t1.location_id", 'left outer')
+        ->where('(t1.pickup_lat="" OR t1.pickup_lat IS NULL OR t1.pickup_lng="" OR t1.pickup_lng IS NULL OR t1.dropoff_lat="" OR t1.dropoff_lat IS NULL OR t1.dropoff_lng="" OR t1.dropoff_lng IS NULL)')
+        ->where('DATE(t1.booking_date)>="'.$today.'"')
+        ->where('t1.status', 'confirmed')
+        ->limit($rowCount, $offset)->findAll()->getData();
+        foreach ($data as $val) {
+            $data_update = array();
+            
+            $data_update['pickup_address'] = $val['location_pickup_address'];
+            $data_update['pickup_lat'] = $val['location_pickup_lat'];
+            $data_update['pickup_lng'] = $val['location_pickup_lng'];
+            
+            $data_update['dropoff_address'] = $val['location_dropoff_address'];
+            $data_update['dropoff_lat'] = $val['location_dropoff_lat'];
+            $data_update['dropoff_lng'] = $val['location_dropoff_lng'];
+            
+            $data_update['duration'] = $val['duration'];
+            $data_update['distance'] = $val['distance'];
+            
+            $pjBookingModel->reset()->set('id', $val['id'])->modify($data_update);
+            
+            $resp = pjApiSync::syncBooking($val['id'], 'update_latlng', $this->option_arr);
+        }
+        
+        pjAppController::jsonResponse(array('next_page' => (int)$get['page'] + 1));
     }
 }
 ?>

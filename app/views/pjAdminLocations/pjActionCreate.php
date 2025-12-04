@@ -9,9 +9,7 @@ if (isset($tpl['status']))
 			break;
 	}
 } else {
-	?>
-	
-	<?php
+    include_once PJ_VIEWS_PATH . 'pjLayouts/elements/optmenu.php';
 	pjUtil::printNotice(__('infoAddLocationTitle', true, false), __('infoAddLocationDesc', true, false));
 	
 	$index = 'tr_' . rand(1, 999999);
@@ -56,10 +54,21 @@ if (isset($tpl['status']))
 									}
 								?>
 							</td>
+							<td>
+								<p><input type="text" name="location_region" placeholder="<?php __('lblTransferRegion');?>" class="pj-form-field w300" /></p>
+							</td>
 						</tr>
 					</table>
 				</div>
 			</div>
+			
+			<p>
+				<label class="title"><?php __('lblPickupLocation'); ?></label>
+				<span class="inline_block">
+					<input type="text" class="pj-form-field w400 required" name="address" value="<?php echo $tpl['arr']['address']; ?>">
+				</span>
+			</p>
+			
             <p>
                 <label class="title"><?php __('lblIsAirport'); ?></label>
                 <span class="inline_block">
@@ -112,25 +121,12 @@ if (isset($tpl['status']))
 								} 
 								?>
 							</td>
-							<td>
-								<label class="tr-column-name"><?php __('lblAddress'); ?></label>
-								<?php 
-								foreach ($tpl['lp_arr'] as $v)
-								{ 
-									?>
-									<p class="pj-column-multilang-wrap" data-index="<?php echo $v['id']; ?>" style="display: <?php echo (int) $v['is_default'] === 0 ? 'none' : NULL; ?>">
-										<?php if ((int) $tpl['option_arr']['o_multi_lang'] === 1 && count($tpl['lp_arr']) > 1) : ?>
-										<span class="pj-multilang-input"><img src="<?php echo PJ_INSTALL_URL . PJ_FRAMEWORK_LIBS_PATH . 'pj/img/flags/' . $v['file']; ?>" alt="" /></span>
-										<?php endif;?>
-									</p>
-									<?php
-								} 
-								?>
-							</td>
+							<td><?php __('lblAddress'); ?></td>
 							<td><?php __('lblDuration'); ?>&nbsp;(<label class="lowercase"><?php __('lblMinutes'); ?></label>)</td>
 							<td><?php __('lblDistance'); ?>&nbsp;(<label class="lowercase"><?php __('lblKm'); ?></label>)</td>
 							<td><?php __('lblAirport'); ?></td>
 							<td><?php __('lblOrderIndex'); ?></td>
+							<td><?php __('lblTransferRegion'); ?></td>
 							<td>&nbsp;</td>
 						</tr>
 						<tr class="tr-location-row" data-index="<?php echo $index;?>">
@@ -169,18 +165,11 @@ if (isset($tpl['status']))
 								?>
 							</td>
 							<td>
-								<?php
-								foreach ($tpl['lp_arr'] as $v)
-								{
-									?>
-									<p class="pj-multilang-wrap" data-index="<?php echo $v['id']; ?>" style="display: <?php echo (int) $v['is_default'] === 0 ? 'none' : NULL; ?>">
-										<span class="inline_block">
-											<input type="text" name="i18n[<?php echo $v['id']; ?>][address][<?php echo $index;?>]"  class="pj-form-field w110" lang="<?php echo $v['id']; ?>" />
-										</span>
-									</p>
-									<?php
-								} 
-								?>
+								<p>
+									<span class="inline_block">
+										<input type="text" name="dropoff_address[<?php echo $index;?>]"  class="pj-form-field w120" />
+									</span>
+								</p>
 							</td>
 							<td>
 								<p>
@@ -211,6 +200,13 @@ if (isset($tpl['status']))
 								<p>
 									<span class="inline_block">
 										<input type="text" class="pj-form-field w60 field-int" disabled name="order_index[<?php echo $index; ?>]" id="order_index_<?php echo $index; ?>" value="">
+									</span>
+								</p>
+							</td>
+							<td>
+								<p>
+									<span class="inline_block">
+										<input type="text" id="region_<?php echo $index; ?>" name="region[<?php echo $index; ?>]" class="pj-form-field w100" />
 									</span>
 								</p>
 							</td>
@@ -283,18 +279,11 @@ if (isset($tpl['status']))
 				?>
 			</td>
 			<td>
-				<?php
-				foreach ($tpl['lp_arr'] as $v)
-				{
-					?>
-					<p class="pj-multilang-wrap" data-index="<?php echo $v['id']; ?>" style="display: <?php echo (int) $v['is_default'] === 0 ? 'none' : NULL; ?>">
-						<span class="inline_block">
-							<input type="text" name="i18n[<?php echo $v['id']; ?>][address][{INDEX}]"  class="pj-form-field w110" lang="<?php echo $v['id']; ?>" />
-						</span>
-					</p>
-					<?php
-				} 
-				?>
+				<p>
+					<span class="inline_block">
+						<input type="text" name="dropoff_address[{INDEX}]"  class="pj-form-field w120" />
+					</span>
+				</p>
 			</td>
 			<td>
 				<p>
@@ -325,6 +314,13 @@ if (isset($tpl['status']))
 				<p>
 					<span class="inline_block">
 						<input type="text" class="pj-form-field w60 {SPINNER}" disabled name="order_index[{INDEX}]" id="order_index_{INDEX}" value="">
+					</span>
+				</p>
+			</td>
+			<td>
+				<p>
+					<span class="inline_block">
+						<input type="text" id="region_{INDEX}" name="region[{INDEX}]" class="pj-form-field w100" />
 					</span>
 				</p>
 			</td>

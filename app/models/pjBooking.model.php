@@ -82,7 +82,20 @@ class pjBookingModel extends pjAppModel
 	    array('name' => 'saferpay_request_id', 'type' => 'varchar', 'default' => ':NULL'),
 	    array('name' => 'saferpay_token', 'type' => 'varchar', 'default' => ':NULL'),
 	    array('name' => 'locale_id', 'type' => 'int', 'default' => '1'),
-	    array('name' => 'notes_for_support', 'type' => 'text', 'default' => ':NULL')
+	    array('name' => 'notes_for_support', 'type' => 'text', 'default' => ':NULL'),
+	    array('name' => 'region', 'type' => 'varchar', 'default' => ':NULL'),
+	    array('name' => 'dropoff_region', 'type' => 'varchar', 'default' => ':NULL'),
+	    array('name' => 'paid_via_payment_link', 'type' => 'tinyint', 'default' => ''),
+	    
+	    array('name' => 'pickup_address', 'type' => 'varchar', 'default' => ':NULL'),
+	    array('name' => 'dropoff_address', 'type' => 'varchar', 'default' => ':NULL'),
+	    
+	    array('name' => 'pickup_lat', 'type' => 'decimal', 'default' => ':NULL'),
+	    array('name' => 'pickup_lng', 'type' => 'decimal', 'default' => ':NULL'),
+	    array('name' => 'dropoff_lat', 'type' => 'decimal', 'default' => ':NULL'),
+	    array('name' => 'dropoff_lng', 'type' => 'decimal', 'default' => ':NULL'),
+	    array('name' => 'duration', 'type' => 'int', 'default' => ':NULL'),
+	    array('name' => 'distance', 'type' => 'int', 'default' => ':NULL')
 	);
 	
 	public $getMapColumns = array(

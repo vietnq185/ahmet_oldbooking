@@ -95,7 +95,7 @@ class pjAdminEmailThemes extends pjAdmin
 		{
 			$pjEmailThemeModel = pjEmailThemeModel::factory()
 				->join('pjMultiLang', "t2.foreign_id = t1.id AND t2.model = 'pjEmailTheme' AND t2.locale = '".$this->getLocaleId()."' AND t2.field = 'name'", 'left');
-			
+			$pjEmailThemeModel->where('t1.type', 'custom');
 			if (isset($_GET['q']) && !empty($_GET['q']))
 			{
 				$q = pjObject::escapeString($_GET['q']);

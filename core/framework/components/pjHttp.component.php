@@ -527,7 +527,7 @@ class pjHttp
         {
             if (version_compare(phpversion(), '5.1.2', '>='))
             {
-                $data = http_build_query($data, NULL, '&');
+                $data = http_build_query($data, '', '&');
             } else {
                 $data = http_build_query($data);
             }

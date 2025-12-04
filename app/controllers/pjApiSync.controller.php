@@ -189,7 +189,10 @@ class pjApiSync extends pjAppController
 		switch ($action){
 			case 'create':
 			case 'update':
-				$data = pjBookingModel::factory()->find($id)->getData();
+				$data = pjBookingModel::factory()
+				->select('t1.*, t2.duration, t2.distance')
+				->join('pjDropoff', "t2.id=t1.dropoff_id", 'left outer')
+				->find($id)->getData();
 				foreach ($data as $k => $v) {
 					if (empty($v)) {
 						$data[$k] = ':NULL';
@@ -210,6 +213,21 @@ class pjApiSync extends pjAppController
 				$pjHttp->setData($data);
 		        $pjHttp->setMethod('POST');
 				break;
+			case 'update_latlng':
+			    $data = pjBookingModel::factory()
+			    ->select('t1.id, t1.pickup_lat, t1.pickup_lng, t1.dropoff_lat, t1.dropoff_lng, t1.pickup_address, t1.dropoff_address, t2.duration, t2.distance')
+			    ->join('pjDropoff', "t2.id=t1.dropoff_id", 'left outer')
+			    ->find($id)->getData();
+			    foreach ($data as $k => $v) {
+			        if (empty($v)) {
+			            $data[$k] = ':NULL';
+			        }
+			    }
+			    $data['sync_action'] = $action;
+			    $data['domain'] = PJ_INSTALL_URL;
+			    $pjHttp->setData($data);
+			    $pjHttp->setMethod('POST');
+			    break;
 			case 'cancel':
 				$data = array(
 					'sync_action' => $action,

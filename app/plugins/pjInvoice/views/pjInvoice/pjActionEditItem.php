@@ -33,5 +33,5 @@
 			<span class="pj-form-field-before"><abbr class="pj-form-field-icon-text"><?php echo pjUtil::formatCurrencySign(NULL, !empty($tpl['arr']['currency']) ? $tpl['arr']['currency'] : $tpl['option_arr']['o_currency'], ""); ?></abbr></span>
 			<input type="text" name="amount" class="pj-form-field w80 align_right" value="<?php echo (float) $tpl['arr']['amount']; ?>" />
 		</span>
-	</p>
+	</p>		<p>		<label class="title"><?php __('lblInvoiceTax'); ?></label>		<select name="tax_id" class="pj-form-field w200">			<option value="">-- <?php __('lblChoose');?> --</option>			<?php foreach ($tpl['invoice_tax_arr'] as $it) { ?>				<option value="<?php echo $it['id'];?>" <?php echo ((int)$tpl['arr']['tax_id'] > 0 && (int)$tpl['arr']['tax_id'] == $it['id']) || ((int)$tpl['arr']['tax_id'] <= 0 && (int)$it['is_default'] == 1) ? 'selected="selected"' : '';?>><?php echo pjSanitize::html($it['name'].' ('.$it['tax'].'%)');?></option>			<?php } ?>		</select>	</p>
 </form>

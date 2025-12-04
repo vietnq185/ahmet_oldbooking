@@ -422,6 +422,14 @@
                 var pax = pjQ.$(this).val();
                 pjQ.$('dd.trCartPax').html(pax);
                 pjQ.$('.trCartPax').toggle(pax.length > 0);
+            }).on("click.tr", ".pjCrRestartBooking", function (e) {
+                if (e && e.preventDefault) {
+                    e.preventDefault();
+                }
+                self.loadSearch.call(self);
+                pjQ.$('html, body').animate({
+                    scrollTop: pjQ.$('#trSearchForm_' + self.opts.index).offset().top
+                }, 500);
             });
 
             pjQ.$(document).on("click", ".trigger", function (e) {
@@ -640,7 +648,7 @@
                     var $msg_container = pjQ.$('#trBookingMsg_' + self.opts.index);
                     $msg_container.find('.alert').removeClass('alert-danger').addClass('alert-success').text(self.opts.message_0);
                     $msg_container.css('display', 'block');
-
+                    pjQ.$('.pjCrBookingSesstionExpired').hide();
                     pjQ.$.post([self.opts.folder, "index.php?controller=pjFront&action=pjActionSaveBooking", "&session_id=", self.opts.session_id].join(""), $form.serialize()).done(function (data) {
                         if (!data.code) {
                             return;
@@ -653,6 +661,15 @@
                             case 101:
                                 $msg_container.find('.alert').removeClass('alert-success').addClass('alert-danger').text(data.text);
                                 self.enableButtons.call(self);
+                                break;
+                            case 102:
+                            	self.disableButtons.call(self);
+                            	$msg_container.css('display', 'none');
+                            	pjQ.$('.pjCrBookingSesstionExpired').show();
+                            	pjQ.$('.pjCrRestartBooking').removeAttr("disabled").removeClass("trButtonDisable");
+                            	pjQ.$('html, body').animate({
+                                    scrollTop: pjQ.$('.pjCrBookingSesstionExpired').offset().top
+                                }, 500);
                                 break;
                             case 200:
                             	if (data.payment_method == 'saferpay') {
@@ -779,7 +796,7 @@
             $form.validate({
                 submitHandler: function (form) {
                     self.disableButtons.call(self);
-                    pjQ.$.post([self.opts.folder, "index.php?controller=pjFront&action=pjActionSaveDeparture", "&session_id=", self.opts.session_id].join(""), $form.serialize()).done(function (data) {
+                    pjQ.$.post([self.opts.folder, "index.php?controller=pjFront&action=pjActionSaveDeparture", "&session_id=", self.opts.session_id, "&submit_form=", 1].join(""), $form.serialize()).done(function (data) {
                         switch (parseInt(data.code, 10)) {
                             case 200:
                                 if(data.is_return == 1)
@@ -791,9 +808,14 @@
                                     self.loadPassenger.call(self);
                                 }
                                 break;
+                            case 201:
+                            	$form.find('.trCheckErrorMsg').html(self.opts.messages.invalid_time).show().fadeOut(3000);
+                                self.enableButtons.call(self);
+                                break;
                             default:
                                 $form.find('.trCheckErrorMsg').html(self.opts.messages.generic_error).show().fadeOut(3000);
                                 self.enableButtons.call(self);
+                                break;
                         }
                     }).fail(function () {
                         self.enableButtons.call(self);
@@ -866,10 +888,14 @@
             $form.validate({
                 submitHandler: function (form) {
                     self.disableButtons.call(self);
-                    pjQ.$.post([self.opts.folder, "index.php?controller=pjFront&action=pjActionSaveReturn", "&session_id=", self.opts.session_id].join(""), $form.serialize()).done(function (data) {
+                    pjQ.$.post([self.opts.folder, "index.php?controller=pjFront&action=pjActionSaveReturn", "&session_id=", self.opts.session_id, "&submit_form=", 1].join(""), $form.serialize()).done(function (data) {
                         switch (parseInt(data.code, 10)) {
                             case 200:
                                 self.loadPassenger.call(self);
+                                break;
+                            case 201:
+                            	$form.find('.trCheckErrorMsg').html(self.opts.messages.invalid_time).show().fadeOut(3000);
+                                self.enableButtons.call(self);
                                 break;
                             default:
                                 $form.find('.trCheckErrorMsg').html(self.opts.messages.generic_error).show().fadeOut(3000);

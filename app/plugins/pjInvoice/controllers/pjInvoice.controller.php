@@ -51,10 +51,9 @@ class pjInvoice extends pjInvoiceAppController
 					$pjInvoiceModel = pjInvoiceModel::factory();
 					$invoice = $pjInvoiceModel->find($_POST['invoice_id'])->getData();
 					if (!empty($invoice))
-					{
-						$total = (float) $invoice['total'] + (float) $_POST['amount'];
-						$pjInvoiceModel->modify(array('total' => $total));
-						pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => '', 'total' => $total));
+					{					    $data_invoice_arr = $this->recalPrice($invoice['id'], $this->option_arr);
+					    $pjInvoiceModel->reset()->set('id', $invoice['id'])->modify($data_invoice_arr);					    
+					    pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => '', 'data' => $data_invoice_arr));
 					}
 					pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => ''));
 				}
@@ -65,7 +64,7 @@ class pjInvoice extends pjInvoiceAppController
 			{
 				$this->set('arr', pjInvoiceModel::factory()->find($_GET['invoice_id'])->getData());
 			}
-			$this->set('config_arr', pjInvoiceConfigModel::factory()->getConfigData($this->getLocaleId()));
+			$this->set('config_arr', pjInvoiceConfigModel::factory()->getConfigData($this->getLocaleId()));			$this->set('invoice_tax_arr', pjInvoiceTaxModel::factory()			    ->join('pjMultiLang', "t2.model='pjInvoiceTax' AND t2.foreign_id=t1.id AND t2.field='name' AND t2.locale='".$this->getLocaleId()."'", 'left outer')			    ->select("t1.*, t2.content as name")			    ->orderBy("`tax` ASC")			    ->findAll()->getData());
 		}
 	}
 		
@@ -361,9 +360,8 @@ class pjInvoice extends pjInvoiceAppController
 				$invoice = $pjInvoiceModel->find($invoice_item['invoice_id'])->getData();
 				if (!empty($invoice))
 				{
-					$total = (float) $invoice['total'] - (float) $invoice_item['amount'];
-					$pjInvoiceModel->modify(array('total' => $total));
-					pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => '', 'total' => $total));
+				    $data_invoice_arr = $this->recalPrice($invoice['id'], $this->option_arr);				    $pjInvoiceModel->reset()->set('id', $invoice['id'])->modify($data_invoice_arr);
+				    pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => '', 'data' => $data_invoice_arr));
 				}
 				pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => ''));
 			}
@@ -401,10 +399,7 @@ class pjInvoice extends pjInvoiceAppController
 		if ($this->isXHR() && $this->isLoged() && $this->isInvoiceReady())
 		{
 			if (isset($_POST['invoice_edit']))
-			{
-				pjInvoiceItemModel::factory()->set('id', $_POST['id'])->modify($_POST);
-				$response = array('code' => 200);
-				pjAppController::jsonResponse($response);
+			{			    $arr = pjInvoiceItemModel::factory()->find($_POST['id'])->getData();			    pjInvoiceItemModel::factory()->reset()->set('id', $_POST['id'])->modify($_POST);			    $data_invoice_arr = $this->recalPrice($arr['invoice_id'], $this->option_arr);			    pjInvoiceModel::factory()->reset()->set('id', $arr['invoice_id'])->modify($data_invoice_arr);			    			    pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => '', 'data' => $data_invoice_arr));
 			}
 			
 			if (isset($_GET['id']) && (int) $_GET['id'] > 0)
@@ -413,7 +408,7 @@ class pjInvoice extends pjInvoiceAppController
 					->select('t1.*, t2.currency')
 					->join('pjInvoice', 't2.id=t1.invoice_id', 'left outer')
 					->find($_GET['id'])->getData());
-				$this->set('config_arr', pjInvoiceConfigModel::factory()->getConfigData($this->getLocaleId()));
+				$this->set('config_arr', pjInvoiceConfigModel::factory()->getConfigData($this->getLocaleId()));								$this->set('invoice_tax_arr', pjInvoiceTaxModel::factory()				    ->join('pjMultiLang', "t2.model='pjInvoiceTax' AND t2.foreign_id=t1.id AND t2.field='name' AND t2.locale='".$this->getLocaleId()."'", 'left outer')				    ->select("t1.*, t2.content as name")				    ->orderBy("`tax` ASC")				    ->findAll()->getData());
 			}
 		}
 	}
@@ -510,10 +505,10 @@ class pjInvoice extends pjInvoiceAppController
 				->select('t1.*, t2.currency')
 				->join('pjInvoice', 't2.id=t1.invoice_id', 'left outer')
 				->orderBy("`$column` $direction")->findAll()->getData();
-			foreach ($data as $k => $v)
-			{
-				$data[$k]['unit_price_formated'] = pjUtil::formatCurrencySign(number_format($v['unit_price'], 2), !empty($v['currency']) ? $v['currency'] : $this->option_arr['o_currency']);
-				$data[$k]['amount_formated'] = pjUtil::formatCurrencySign(number_format($v['amount'], 2), !empty($v['currency']) ? $v['currency'] : $this->option_arr['o_currency']);
+			foreach ($data as $k => $v)
+			{			    $data[$k]['description'] = !empty($v['description']) ? nl2br($v['description']) : '';
+				$data[$k]['unit_price_formated'] = pjUtil::formatCurrencySign(number_format((float)$v['unit_price'], 2), !empty($v['currency']) ? $v['currency'] : $this->option_arr['o_currency']);
+				$data[$k]['amount_formated'] = pjUtil::formatCurrencySign(number_format((float)$v['amount'], 2), !empty($v['currency']) ? $v['currency'] : $this->option_arr['o_currency']);
 			}
 			
 			pjAppController::jsonResponse(compact('data', 'column', 'direction'));
@@ -525,7 +520,7 @@ class pjInvoice extends pjInvoiceAppController
 	{
 		$this->checkLogin();
 		
-		if (!$this->isInvoiceReady())
+		if (!$this->isInvoiceReady() || !$this->isAdmin())
 		{
 			$this->set('status', 2);
 			return;
@@ -546,7 +541,7 @@ class pjInvoice extends pjInvoiceAppController
 					$thumb = 'app/web/invoices/' . $hash . '_thumb.png';
 					if ($pjImage->save($original))
 					{
-						$pjImage->loadImage($original)->resizeSmart(120, 60)->saveImage($thumb);
+						$pjImage->loadImage($original)						//->resizeSmart(120, 60)						->saveImage($thumb);
 						
 						$_POST['y_logo'] = $thumb;
 						@unlink($original);
@@ -590,10 +585,10 @@ class pjInvoice extends pjInvoiceAppController
 				->set('id', 1)
 				->modify(array_merge($_POST, $data));
 			
-			if (isset($_POST['i18n']))
-			{
-				pjMultiLangModel::factory()->updateMultiLang($_POST['i18n'], 1, 'pjInvoiceConfig');
-			}
+			if (isset($_POST['i18n']))
+			{                $data_i18n = array();                foreach ($_POST['i18n'] as $locale_id => $val) {                    foreach ($val as $k => $v) {                        if ($k == 'tax_name') {                            continue;                        }                        $data_i18n[$locale_id][$k] = $v;                    }                }
+                pjMultiLangModel::factory()->updateMultiLang($data_i18n, 1, 'pjInvoiceConfig');
+			}			$pjMultiLangModel = pjMultiLangModel::factory();			$pjInvoiceTaxModel = pjInvoiceTaxModel::factory();			if(isset($_POST['tax']) && !empty($_POST['tax']))			{			    foreach ($_POST['tax'] as $k => $v) {			        $data_tax = array();			        $data_tax['tax'] = $v;			        $data_tax['is_default'] = $_POST['is_default'][$k] ? 1 : 0;			        if(strpos($k, 'cr') !== false) {   			            $tax_id = $pjInvoiceTaxModel->reset()->setAttributes($data_tax)->insert()->getInsertId();			        } else{			            $tax_id = $k;			            $pjInvoiceTaxModel->reset()->where('id', $k)->limit(1)->modifyAll($data_tax);			        }			        if ($tax_id !== false && (int)$tax_id > 0) {			            foreach ($_POST['i18n'] as $locale => $locale_arr)			            {			                foreach ($locale_arr as $tfield => $content)			                {			                    if ($tfield != 'tax_name') continue;			                    $field = 'name';			                    if(is_array($content))			                    {			                        $sql = sprintf("INSERT INTO `%1\$s` (`id`, `foreign_id`, `model`, `locale`, `field`, `content`, `source`)																VALUES (NULL, :foreign_id, :model, :locale, :field, :update_content, :source)																ON DUPLICATE KEY UPDATE `content` = :update_content, `source` = :source;",			                            $pjMultiLangModel->getTable()			                            );			                        $foreign_id = $tax_id;			                        $model = 'pjInvoiceTax';			                        $source = 'data';			                        $update_content = @$content[$k];			                        $modelObj = $pjMultiLangModel->reset()->prepare($sql)->exec(compact('foreign_id', 'model', 'locale', 'field', 'update_content', 'source'));			                        if ($modelObj->getAffectedRows() > 0 || $modelObj->getInsertId() > 0)			                        {			                            			                        }			                    }			                }			            }			        }			    }			}						if(isset($_POST['remove_tax_arr']) && $_POST['remove_tax_arr'] != '')			{			    $remove_tax_arr = explode("|", $_POST['remove_tax_arr']);			    if ($remove_tax_arr) {			        $pjMultiLangModel->reset()->where('model', 'pjInvoiceTax')->whereIn('foreign_id', $remove_tax_arr)->eraseAll();			        $pjInvoiceTaxModel->reset()->whereIn('id', $remove_tax_arr)->eraseAll();			    }			}
 			
 			pjUtil::redirect(PJ_INSTALL_URL . "index.php?controller=pjInvoice&action=pjActionIndex&err=PIN02&tab_id=" . $_POST['tab_id']);
 		}
@@ -610,7 +605,7 @@ class pjInvoice extends pjInvoiceAppController
 		{
 			$arr['i18n'] = pjMultiLangModel::factory()->getMultiLang($arr['id'], 'pjInvoiceConfig');
 		}
-		
+		$invoice_tax_arr = pjInvoiceTaxModel::factory()->orderBy('t1.tax ASC')->findAll()->getData();		foreach($invoice_tax_arr as $k => $v)		{		    $invoice_tax_arr[$k]['i18n'] = pjMultiLangModel::factory()->getMultiLang($v['id'], 'pjInvoiceTax');		}		$this->set('invoice_tax_arr', $invoice_tax_arr);
 		$locale_arr = pjLocaleModel::factory()
 			->select('t1.*, t2.file')
 			->join('pjLocaleLanguage', 't2.iso=t1.language_iso', 'left outer')
@@ -806,12 +801,12 @@ class pjInvoice extends pjInvoiceAppController
 				}
 				
 				// Build message
-				$arr = pjInvoiceModel::factory()->where('t1.uuid', $_POST['id'])->where('t1.order_id', $_POST['uuid'])->limit(1)->findAll()->getDataIndex(0);
+				$arr = pjInvoiceModel::factory()				->join('pjMultiLang', sprintf("t2.model='pjCountry' AND t2.foreign_id=t1.y_country AND t2.field='name' AND t2.locale='%u'", $this->getLocaleId()), 'left outer')								->join('pjMultiLang', sprintf("t3.model='pjCountry' AND t3.foreign_id=t1.b_country AND t3.field='name' AND t3.locale='%u'", $this->getLocaleId()), 'left outer')								->join('pjMultiLang', sprintf("t4.model='pjCountry' AND t4.foreign_id=t1.s_country AND t4.field='name' AND t4.locale='%u'", $this->getLocaleId()), 'left outer')								->select("t1.*, t2.content as y_country_title, t3.content as b_country_title, t3.content as s_country_title,				    						AES_DECRYPT(t1.cc_type, '".PJ_SALT."') AS cc_type,				    						AES_DECRYPT(t1.cc_num, '".PJ_SALT."') AS cc_num,				    						AES_DECRYPT(t1.cc_exp_month, '".PJ_SALT."') AS cc_exp_month,				    						AES_DECRYPT(t1.cc_exp_year, '".PJ_SALT."') AS cc_exp_year,				    						AES_DECRYPT(t1.cc_code, '".PJ_SALT."') AS cc_code")				->where('t1.uuid', $_POST['id'])->where('t1.order_id', $_POST['uuid'])->limit(1)->findAll()->getDataIndex(0);
 				if ($arr === FALSE || empty($arr))
 				{
 					pjAppController::jsonResponse(array('status' => 'ERR', 'code' => 102, 'text' => 'Invoice not found.'));
 				}
-				$arr['items'] = pjInvoiceItemModel::factory()->where('t1.invoice_id', $arr['id'])->findAll()->getData();
+				$arr['items'] = pjInvoiceItemModel::factory()				->select('t1.*, t2.tax')				->join('pjInvoiceTax', 't2.id=t1.tax_id', 'left outer')				->where('t1.invoice_id', $arr['id'])->findAll()->getData();
 				$confi_arr = pjInvoiceConfigModel::factory()->find(1)->getData();
 				$arr['y_logo'] = '<img src="'.PJ_INSTALL_URL.$confi_arr['y_logo'].'" />';
 				$arr['o_use_qty_unit_price'] = $confi_arr['o_use_qty_unit_price'];
@@ -819,51 +814,15 @@ class pjInvoice extends pjInvoiceAppController
 				$view_url = PJ_INSTALL_URL . 'index.php?controller=pjInvoice&action=pjActionView&id=' . $_POST['id'] . '&uuid=' . $_POST['uuid'];
 				$view_url = '<a href="'.$view_url.'">'.$view_url.'</a>';
 				// Send message
-				$pjEmail = new pjEmail();
-				if ($this->option_arr['o_send_email'] == 'smtp')
-				{
-					$pjEmail
-						->setTransport('smtp')
-						->setSmtpHost($this->option_arr['o_smtp_host'])
-						->setSmtpPort($this->option_arr['o_smtp_port'])
-						->setSmtpUser($this->option_arr['o_smtp_user'])
-						->setSmtpPass($this->option_arr['o_smtp_pass'])
-					;
-				}
-				
-				if ($b_send && $s_send)
-				{
-					$pjEmail
-						->setTo($_POST['b_email'])
-						->setCc($_POST['s_email'])
-					;
-				} elseif ($b_send && !$s_send) {
-					$pjEmail->setTo($_POST['b_email']);
-				} elseif (!$b_send && $s_send) {
-					$pjEmail->setTo($_POST['s_email']);
-				}
-				$message = '';
+				$pjEmail = new pjEmail();				if ($this->option_arr['o_send_email'] == 'smtp')				{				    $pjEmail				    ->setTransport('smtp')				    ->setSmtpHost($this->option_arr['o_smtp_host'])				    ->setSmtpPort($this->option_arr['o_smtp_port'])				    ->setSmtpUser($this->option_arr['o_smtp_user'])				    ->setSmtpPass($this->option_arr['o_smtp_pass'])				    ;				}				$pjEmail->setContentType('text/html');
+				$message = '';
 				if($arr['status'] == 'not_paid')
 				{
 					$message .= '<p>'.__('plugin_invoice_i_send_invoice_link', true).'</p>';
 					$message .= $view_url . '<br/><br/><br/><br/>';
 				}
-				$message .= $this->pjActionTokenizer($arr);
-				
-				$master_admin = pjUserModel::factory()->find(1)->getData();
-				$y_email = $master_admin['email'];
-				if(!empty($arr['y_email']) && pjValidation::pjActionEmail($arr['y_email']))
-				{
-					$y_email = $arr['y_email'];
-				}
-				$result = $pjEmail
-					->setContentType('text/html')
-					->setFrom($y_email)
-					->setReplyTo($y_email)
-					->setSubject(__('plugin_invoice_send_subject', true))
-					->send($message)
-				;
-				
+				$message .= $this->pjActionTokenizer($arr);				$admin_email = $this->getAdminEmail();
+				$result = $pjEmail					->setTo($_POST['b_email'])					->setFrom($admin_email, $this->option_arr['o_email_sender'])					->setSubject(__('plugin_invoice_send_subject', true))					->send($message);
 				if ($result)
 				{
 					pjAppController::jsonResponse(array('status' => 'OK', 'code' => 200, 'text' => 'Email has been sent.'));
@@ -881,37 +840,37 @@ class pjInvoice extends pjInvoiceAppController
 			$locale_id = !empty($a['locale_id']) ? $a['locale_id'] : $this->getLocaleID();
 		}
 		
-		$config = pjInvoiceConfigModel::factory()->getConfigData($locale_id);
-		
-		$items = "";
+		$config = pjInvoiceConfigModel::factory()->getConfigData($locale_id);				$payment_methods = __('payment_methods', true);		$pm = isset($config[$a['payment_method']]) && !empty($config[$a['payment_method']]) ? $config[$a['payment_method']] : $payment_methods[$a['payment_method']];
+		$tax_rate = 0;		$tax_rate_arr = pjInvoiceTaxModel::factory()->where('t1.is_default', 1)->limit(1)->findAll()->getDataIndex(0);		if ($tax_rate_arr) {		    $tax_rate = $tax_rate_arr['tax'];		}
+		$items = "";        $items_tax = array();
 		if (isset($a['items']) && is_array($a['items']) && !empty($a['items']))
 		{
 			$items .= '<table style="width: 100%; border-collapse: collapse">';
 			$items .= '<tr>';
-			$items .= '<td style="border-bottom: solid 1px #000; border-top: solid 1px #000">'.__('plugin_invoice_i_description', true).'</td>';
+			$items .= '<td style="border-bottom: solid 1px #000; font-weight: 600;">'.__('plugin_invoice_i_description', true).'</td>';
 			if($a['o_use_qty_unit_price'] == 1)
 			{
-				$items .= '<td style="border-bottom: solid 1px #000; border-top: solid 1px #000; text-align: right">'.__('plugin_invoice_i_qty', true).'</td>';
-				$items .= '<td style="border-bottom: solid 1px #000; border-top: solid 1px #000; text-align: right">'.__('plugin_invoice_i_unit', true).'</td>';
-			}
-			$items .= '<td style="border-bottom: solid 1px #000; border-top: solid 1px #000; text-align: right">'.__('plugin_invoice_i_amount', true).'</td>';
+				$items .= '<td style="border-bottom: solid 1px #000; text-align: right; font-weight: 600;">'.__('plugin_invoice_i_qty', true).'</td>';
+				$items .= '<td style="border-bottom: solid 1px #000; text-align: right; font-weight: 600;">'.__('plugin_invoice_i_unit', true).'</td>';
+			}			$items .= '<td></td>';
+			$items .= '<td style="border-bottom: solid 1px #000; text-align: right; font-weight: 600;">'.__('plugin_invoice_i_amount', true).'</td>';
 			$items .= '</tr>';
 			foreach ($a['items'] as $item)
 			{
-				$items .= '<tr>';
-				$items .= sprintf('<td>%s<br>%s</td>', $item['name'], $item['description']);
+				$items .= '<tr>';				$description = !empty($item['description']) ? nl2br($item['description']) : '';
+				$items .= sprintf('<td style="border-top: solid 1px #000; ">%s<br>%s</td>', $item['name'], $description);
 				if($a['o_use_qty_unit_price'] == 1)
 				{
-					$items .= sprintf('<td style="text-align: right">%s</td>', number_format($item['qty'], (int) $config['o_qty_is_int'] === 0 ? 2 : 0));
-					$items .= sprintf('<td style="text-align: right">%s</td>', number_format($item['unit_price'], 2));
-				}
-				$items .= sprintf('<td style="text-align: right">%s</td>', number_format($item['amount'], 2));
-				$items .= '</tr>';
+					$items .= sprintf('<td style="text-align: right; border-top: solid 1px #000; ">%s</td>', number_format($item['qty'], (int) $config['o_qty_is_int'] === 0 ? 2 : 0));
+					$items .= sprintf('<td style="text-align: right; border-top: solid 1px #000; ">%s</td>', number_format($item['unit_price'], 2));
+				}				if ((float)$item['amount'] > 0) {				    $items .= sprintf('<td style="text-align: right; border-top: solid 1px #000; ">%s</td>', $item['tax'].'%');				} else {				    $items .= sprintf('<td style="text-align: right; border-top: solid 1px #000; ">%s</td>', '');				}
+				$items .= sprintf('<td style="text-align: right; border-top: solid 1px #000; ">%s</td>', number_format($item['amount'], 2));
+				$items .= '</tr>';				if ((float)$item['tax'] > 0) {				    if (!isset($items_tax[$item['tax']])) {				        $items_tax[$item['tax']] = 0;				    }				    $price = pjAppController::getPriceBeforeTax($item['amount'], $item['tax']);				    $items_tax[$item['tax']] += $item['amount'] - $price;				}
 			}
 			$items .= '</table>';
-		}
+		}				$tax_rates = '';		foreach ($items_tax as $k => $v) {		    $tax_rates .= '<tr><td class="label">'.__('lblInvoiceTax', true).' '.$k.'%:</td><td class="value">'.round($v, 2, PHP_ROUND_HALF_UP).'</td></tr>';		}
 		$statuses = __('plugin_invoice_statuses', true);
-		$_yesno = __('plugin_invoice_yesno', true);
+		$_yesno = __('plugin_invoice_yesno', true);		$y_logo = '';		if (!empty($config['y_logo'])) {		    $y_logo = '<img src="'.PJ_INSTALL_URL.$config['y_logo'].'" style="max-height: 100%;" />';		}
 		return str_replace(
 			array(
 				'{uuid}',
@@ -971,7 +930,7 @@ class pjInvoice extends pjInvoiceAppController
 				'{s_date}',
 				'{s_terms}',
 				'{s_is_shipped}',
-				'{items}'
+				'{items}',                			    '{y_tax_number}',			    '{y_bank_name}',			    '{y_iban}',			    '{y_bic}',			    '{b_company_name}',			    '{b_tax_number}',			    '{payment_method}',			    '{y_company_reg_no}',			    '{tax_rate}',			    '{tax_rates}'
 			),
 			array(
 				$a['uuid'],
@@ -981,27 +940,27 @@ class pjInvoice extends pjInvoiceAppController
 				!empty($a['created']) ? date($this->option_arr['o_date_format'] . " H:i:s", strtotime($a['created'])) : NULL,
 				!empty($a['modified']) ? date($this->option_arr['o_date_format'] . " H:i:s", strtotime($a['modified'])) : NULL,
 				$statuses[$a['status']],
-				number_format($a['subtotal'], 2),
-				number_format($a['discount'], 2),
-				number_format($a['tax'], 2),
-				number_format($a['shipping'], 2),
-				number_format($a['total'], 2),
-				number_format($a['paid_deposit'], 2),
-				number_format($a['amount_due'], 2),
+			    number_format($a['subtotal'], 2),
+			    number_format($a['discount'], 2),
+			    number_format($a['tax'], 2),
+			    number_format($a['shipping'], 2),
+			    number_format($a['total'], 2),
+			    number_format($a['paid_deposit'], 2),
+			    number_format($a['amount_due'], 2),
 				$a['currency'],
 				$a['notes'],
-				$a['y_logo'],
-				$a['y_company'],
-				$a['y_name'],
-				$a['y_street_address'],
-				$a['y_country_title'],
-				$a['y_city'],
-				$a['y_state'],
-				$a['y_zip'],
-				$a['y_phone'],
-				$a['y_fax'],
-				$a['y_email'],
-				$a['y_url'],
+			    $y_logo,
+			    $config['y_company'],
+			    $config['y_name'],
+			    $config['y_street_address'],
+			    $a['y_country_title'],
+			    $config['y_city'],
+			    $config['y_state'],
+			    $config['y_zip'],
+			    $config['y_phone'],
+			    $config['y_fax'],
+			    $config['y_email'],
+			    $config['y_url'],
 				$a['b_billing_address'],
 				$a['b_company'],
 				$a['b_name'],
@@ -1031,7 +990,7 @@ class pjInvoice extends pjInvoiceAppController
 				pjUtil::formatDate($a['s_date'], 'Y-m-d', $this->option_arr['o_date_format']),
 				$a['s_terms'],
 				$_yesno[$a['s_is_shipped']],
-				$items
+				$items,			    $config['y_tax_number'],			    $config['y_bank_name'],			    $config['y_iban'],			    $config['y_bic'],			    $a['b_company'],			    $a['b_tax_number'],			    $pm,			    $config['y_company_reg_no'],			    $tax_rate,			    $tax_rates
 			),
 			$config['y_template']
 		);
@@ -1129,8 +1088,8 @@ class pjInvoice extends pjInvoiceAppController
 		{
 			pjUtil::redirect(PJ_INSTALL_URL . "index.php?controller=pjInvoice&action=pjActionInvoices&err=PIN04");
 		}
-
-		$arr['items'] = pjInvoiceItemModel::factory()->where('t1.invoice_id', $arr['id'])->findAll()->getData();
+
+		$arr['items'] = pjInvoiceItemModel::factory()		->select('t1.*, t2.tax')		->join('pjInvoiceTax', 't2.id=t1.tax_id', 'left outer')		->where('t1.invoice_id', $arr['id'])->findAll()->getData();
 		$locale_id = !empty($arr['locale_id']) ? $arr['locale_id'] : $this->getLocaleId();
 		$confi_arr = pjInvoiceConfigModel::factory()->getConfigData($locale_id);
 		$arr['y_logo'] = '<img src="'.PJ_INSTALL_URL.$confi_arr['y_logo'].'" />';
@@ -1146,6 +1105,7 @@ class pjInvoice extends pjInvoiceAppController
 			->appendJs('pjInvoice.js', $this->getConst('PLUGIN_JS_PATH'))
 			->appendCss('invoice.css', $this->getConst('PLUGIN_CSS_PATH'))
 		;
-	}
+	}	protected function recalPrice($invoice_id, $option_arr) {	    $invoice_arr = pjInvoiceModel::factory()->reset()->find($invoice_id)->getData();	    $invoice_item_arr = pjInvoiceItemModel::factory()->reset()->select('t1.*, t3.tax AS tax_rate')	    ->join('pjInvoice', 't2.id=t1.invoice_id', 'inner')	    ->join('pjInvoiceTax', 't3.id=t1.tax_id', 'left outer')	    ->where('t1.invoice_id', $invoice_id)	    ->findAll()->getData();	    	    $voucher_code = $invoice_arr['voucher_code'];	    $sub_total_before_tax = $tax = $sub_total = 0;	    foreach ($invoice_item_arr as $ii) {	        $sub_total += $ii['amount'];	        if ($ii['tax_rate'] > 0) {	            $amount_before_tax = pjAppController::getPriceBeforeTax($ii['amount'], $ii['tax_rate']);	            $sub_total_before_tax += $amount_before_tax;	            $tax += $ii['amount'] - $amount_before_tax;	        } else {	            $sub_total_before_tax += $ii['amount'];	            $tax += 0;	        }	    }	    	    $discount_arr = pjAppController::getDiscount($sub_total, $voucher_code, $option_arr['o_currency']);	    $discount = $discount_arr['status'] == 'OK'? $discount_arr['discount']: 0;	    $discount = round($discount);	    $total = round($sub_total_before_tax + $tax - $discount);	    $amount_due = $total - $invoice_arr['paid_deposit'];	    return array(	        'subtotal' => round($sub_total_before_tax, 2, PHP_ROUND_HALF_UP), 	        'discount' => round($discount, 2, PHP_ROUND_HALF_UP), 	        'tax' => round($tax, 2, PHP_ROUND_HALF_UP), 	        'total' => round($total, 2, PHP_ROUND_HALF_UP), 	        'amount_due' => round($amount_due, 2, PHP_ROUND_HALF_UP)
+	    );	}
 }
 ?>

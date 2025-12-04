@@ -2,6 +2,8 @@
 $STORE = @$tpl['store'];
 $cartIndex = str_replace('pjAction', '', $_GET['action']) . '_' . pjObject::escapeString($_GET['index']);
 $cart = @$tpl['cart'];
+$_date = pjUtil::formatDate($cart['date'], $tpl['option_arr']['o_date_format']);
+$booking_date = $_date . ' ' . $cart['time'] . ':00';
 ?>
 <aside id="trCart_<?php echo $cartIndex;?>" class="one-fourth sidebar right">
     <div class="widget">
@@ -15,7 +17,7 @@ $cart = @$tpl['cart'];
 
                     <?php if($_GET['action'] != 'pjActionExtras'): ?>
                         <dt class="trCartDepartureTime" style="display: <?= !empty($cart['time'])? 'block': 'none' ?>;"><?php __('front_time'); ?></dt>
-                        <dd class="trCartDepartureTime" style="display: <?= !empty($cart['time'])? 'block': 'none' ?>;"><?= $cart['time'] ?></dd>
+                        <dd class="trCartDepartureTime" style="display: <?= !empty($cart['time'])? 'block': 'none' ?>;"><?php echo $cart['time'];?> (<?php echo date('h:i A', strtotime($booking_date));?>)</dd>
                     <?php endif; ?>
 
                     <dt><?php __('front_cart_from'); ?></dt>
@@ -35,7 +37,10 @@ $cart = @$tpl['cart'];
                 </dl>
             </div>
 
-            <?php if($cart['is_return']): ?>
+            <?php if($cart['is_return']): 
+                $_return_date = pjUtil::formatDate($cart['return_date'], $tpl['option_arr']['o_date_format']);
+                $return_date = $_return_date . ' ' . $cart['return_time'] . ':00';
+                ?>
                 <div>
                     <h5><?php __('front_cart_return'); ?></h5>
                     <dl>
@@ -44,7 +49,7 @@ $cart = @$tpl['cart'];
                             <dd class="trCartReturnDate" style="display: <?= !empty($cart['return_date'])? 'block': 'none' ?>;"><?= $cart['return_date'] ?></dd>
 
                             <dt class="trCartReturnTime" style="display: <?= !empty($cart['return_time'])? 'block': 'none' ?>;"><?php __('front_time'); ?></dt>
-                            <dd class="trCartReturnTime" style="display: <?= !empty($cart['return_time'])? 'block': 'none' ?>;"><?= $cart['return_time'] ?></dd>
+                            <dd class="trCartReturnTime" style="display: <?= !empty($cart['return_time'])? 'block': 'none' ?>;"><?php echo $cart['return_time'];?> (<?php echo date('h:i A', strtotime($return_date));?>)</dd>
                         <?php endif; ?>
 
                         <dt><?php __('front_cart_from'); ?></dt>

@@ -17,6 +17,10 @@ class pjLocationModel extends pjAppModel
 		array('name' => 'icon', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'order_index', 'type' => 'int', 'default' => ':NULL'),
 	    array('name' => 'color', 'type' => 'varchar', 'default' => ':NULL'),
+	    array('name' => 'region', 'type' => 'varchar', 'default' => ':NULL'),
+	    array('name' => 'address', 'type' => 'varchar', 'default' => ':NULL'),
+	    array('name' => 'lat', 'type' => 'float', 'default' => ':NULL'),
+	    array('name' => 'lng', 'type' => 'float', 'default' => ':NULL'),
 		array('name' => 'modified', 'type' => 'datetime', 'default' => ':NOW()')
 	);
 	

@@ -21,14 +21,10 @@ class pjInvoiceConfigModel extends pjInvoiceAppModel
 		array('name' => 'y_url', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'p_accept_payments', 'type' => 'tinyint', 'default' => 0),
 		array('name' => 'p_accept_paypal', 'type' => 'tinyint', 'default' => 0),
-		array('name' => 'p_accept_bambora', 'type' => 'tinyint', 'default' => 0),
 		array('name' => 'p_accept_authorize', 'type' => 'tinyint', 'default' => 0),
 		array('name' => 'p_accept_creditcard', 'type' => 'tinyint', 'default' => 0),
 		array('name' => 'p_accept_cash', 'type' => 'tinyint', 'default' => 0),
 		array('name' => 'p_accept_bank', 'type' => 'tinyint', 'default' => 0),
-		array('name' => 'p_bambora_merchant_id', 'type' => 'varchar', 'default' => ':NULL'),
-		array('name' => 'p_bambora_hash_algorithm', 'type' => 'varchar', 'default' => ':NULL'),
-		array('name' => 'p_bambora_hash', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'p_authorize_tz', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'p_authorize_key', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'p_authorize_mid', 'type' => 'varchar', 'default' => ':NULL'),
@@ -52,10 +48,12 @@ class pjInvoiceConfigModel extends pjInvoiceAppModel
 		array('name' => 'si_shipping', 'type' => 'tinyint', 'default' => 0),
 		array('name' => 'o_booking_url', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'o_qty_is_int', 'type' => 'tinyint', 'default' => 0),
-		array('name' => 'o_use_qty_unit_price', 'type' => 'tinyint', 'default' => 1)
+		array('name' => 'o_use_qty_unit_price', 'type' => 'tinyint', 'default' => 1),	    	    array('name' => 'y_tax_number', 'type' => 'varchar', 'default' => ':NULL'),	    array('name' => 'y_bank_name', 'type' => 'varchar', 'default' => ':NULL'),	    array('name' => 'y_iban', 'type' => 'varchar', 'default' => ':NULL'),	    array('name' => 'y_bic', 'type' => 'varchar', 'default' => ':NULL'),	    array('name' => 'y_company_reg_no', 'type' => 'varchar', 'default' => ':NULL')
 	);
 	
-	protected $i18n = array('y_company', 'y_name', 'y_street_address', 'y_city', 'y_state', 'y_template', 'p_paypal_address', 'p_bank_account');
+	protected $i18n = array(	    'y_company', 	    'y_name', 	    'y_street_address', 	    'y_city', 	    'y_state', 	    'y_template', 	    'p_paypal_address', 
+	    'p_bank_account',	    'authorize',	    'bank',	    'cash',	    'creditcard',	    'creditcard_later',	    'paypal',	    'saferpay',
+	);
 	
 	public static function factory($attr=array())
 	{

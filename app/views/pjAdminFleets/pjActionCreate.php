@@ -14,6 +14,7 @@ if (isset($tpl['status']))
 	unset($days[0]);
 	$week_start = isset($tpl['option_arr']['o_week_start']) && in_array((int) $tpl['option_arr']['o_week_start'], range(0,6)) ? (int) $tpl['option_arr']['o_week_start'] : 0;
     $jqDateFormat = pjUtil::jqDateFormat($tpl['option_arr']['o_date_format']);
+    include_once PJ_VIEWS_PATH . 'pjLayouts/elements/optmenu.php';
 	pjUtil::printNotice(__('infoAddFleetTitle', true, false), __('infoAddFleetDesc', true, false));
 	?>
 	<form action="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminFleets&amp;action=pjActionCreate" method="post" id="frmCreateFleet" class="pj-form form" enctype="multipart/form-data">

@@ -20,20 +20,7 @@ if (isset($tpl['status']))
 	$bodies = __('error_bodies', true);
 	?>
 	<style type="text/css">
-	label[for="status_cancelled"].ui-state-active{
-		background: #FEFEFE;
-		color: black;
-	}
-	label[for="status_not_paid"].ui-state-active{
-		background: red;
-		color: #fff;
-		text-shadow: 1px 1px 1px #444;
-	}
-	label[for="status_paid"].ui-state-active{
-		background: green;
-		color: white;
-		text-shadow: 1px 1px 1px #333;
-	}
+label[for="status_cancelled"].ui-state-active{		background: #FEFEFE !important;		color: black !important;	}	label[for="status_not_paid"].ui-state-active{		background: red !important;		color: #fff !important;		text-shadow: 1px 1px 1px #444 !important;	}	label[for="status_paid"].ui-state-active{		background: green !important;		color: white !important;		text-shadow: 1px 1px 1px #333 !important;	}
 	</style>
 	<form action="<?php echo PJ_INSTALL_URL; ?>index.php?controller=pjInvoice&amp;action=pjActionCreateInvoice" method="post" class="pj-form form" id="frmCreateInvoice">
 		<input type="hidden" name="invoice_create" value="1" />
@@ -169,7 +156,7 @@ if (isset($tpl['status']))
 							<input type="submit" value="<?php __('plugin_invoice_save'); ?>" class="pj-button" />
 						</p>
 					</div>
-					<div class="float_right w350">
+					<div class="float_right w350">						<p>    						<label class="title"><?php __('plugin_invoice_i_payment_method'); ?></label><br/>        						<span class="left">        							<select name="payment_method" id="payment_method" class="pj-form-field w200">        								<option value="">---</option>        								<?php        								foreach (__('payment_methods', true) as $k => $v)        								{        								    ?><option value="<?php echo $k; ?>"><?php echo isset($tpl['config_arr'][$k]) && !empty($tpl['config_arr'][$k]) ? pjSanitize::html($tpl['config_arr'][$k]) : $v; ?></option><?php        								}        								?>        							</select>        						</span>        					</p>    					
 						<p class="tblError">
 							<label class="title"><?php __('plugin_invoice_i_status'); ?></label><br/>
 							<span class="left h30 block" id="boxStatus">
@@ -195,19 +182,7 @@ if (isset($tpl['status']))
 				<?php pjUtil::printNotice(@$titles['PIN11'], @$bodies['PIN11']); ?>
 		
 				<fieldset class="fieldset white">
-					<legend><?php __('plugin_invoice_billing_info'); ?></legend>
-					<p>
-						<label class="title"><?php __('plugin_invoice_i_billing_address'); ?></label>
-						<span class="left">
-							<input type="text" name="b_billing_address" id="b_billing_address" class="pj-form-field w500" value="<?php echo htmlspecialchars(stripslashes(@$_REQUEST['b_billing_address'])); ?>" />
-						</span>
-					</p>
-					<p>
-						<label class="title"><?php __('plugin_invoice_i_company'); ?></label>
-						<span class="left">
-							<input type="text" name="b_company" id="b_company" class="pj-form-field w500" value="<?php echo htmlspecialchars(stripslashes(@$_REQUEST['b_company'])); ?>" />
-						</span>
-					</p>
+					<legend><?php __('plugin_invoice_billing_info'); ?></legend>					<p>						<label class="title"><?php __('plugin_invoice_i_company'); ?></label>						<span class="left">							<input type="text" name="b_company" id="b_company" class="pj-form-field w500" value="<?php echo htmlspecialchars(stripslashes(@$_REQUEST['b_company'])); ?>" />						</span>					</p>
 					<p>
 						<label class="title"><?php __('plugin_invoice_i_name'); ?></label>
 						<span class="left">
@@ -243,7 +218,7 @@ if (isset($tpl['status']))
 						<span class="left">
 							<input type="text" name="b_zip" id="b_zip" class="pj-form-field w500" value="<?php echo htmlspecialchars(stripslashes(@$_REQUEST['b_zip'])); ?>" />
 						</span>
-					</p>
+					</p>										<p>						<label class="title"><?php __('lblInvoiceTaxNumber'); ?></label>						<span class="left">							<input type="text" name="b_tax_number" id="b_tax_number" class="pj-form-field w500" value="<?php echo htmlspecialchars(stripslashes(@$_REQUEST['b_tax_number'])); ?>" />						</span>					</p>
 					<p>
 						<label class="title"><?php __('plugin_invoice_i_phone'); ?></label>
 						<span class="pj-form-field-custom pj-form-field-custom-before">

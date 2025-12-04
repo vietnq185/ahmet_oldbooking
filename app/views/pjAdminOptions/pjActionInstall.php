@@ -15,6 +15,7 @@ if (isset($tpl['status']))
 	{
 		pjUtil::printNotice(@$titles[$_GET['err']], @$bodies[$_GET['err']]);
 	}
+	include_once PJ_VIEWS_PATH . 'pjLayouts/elements/optmenu.php';
 	?>
 	<div id="tabs">
 		<ul>

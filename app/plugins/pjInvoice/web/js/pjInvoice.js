@@ -24,7 +24,8 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 				select: function (event, ui) {
 					$(":input[name='tab_id']").val(ui.panel.id);
 				}
-			};
+			},
+			remove_tax_arr = new Array();
 			
 		if ($tabs.length > 0 && tabs) {
 			$tabs.tabs(tOpt);
@@ -210,10 +211,24 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 			}
 		}
 		
+		function onBeforeShow (obj) {
+			if (pjGrid.isAdmin) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		
 		if ($("#grid").length > 0 && datagrid) {
+			var $actions = [];
+			if (pjGrid.isAdmin) {
+				$actions.push({text: myLabel.delete_title, url: "index.php?controller=pjInvoice&action=pjActionDeleteBulk", render: true, confirmation: myLabel.delete_body});
+			}
+			
 			var $grid = $("#grid").datagrid({
 				buttons: [{type: "edit", url: "index.php?controller=pjInvoice&action=pjActionUpdate&id={:id}", title: "Edit"},
-				          {type: "delete", url: "index.php?controller=pjInvoice&action=pjActionDelete&id={:id}", title: "Delete"},
+				          {type: "delete", url: "index.php?controller=pjInvoice&action=pjActionDelete&id={:id}", title: "Delete", beforeShow: onBeforeShow},
 				          {type: "menu", url: "#", text: '', items:[
 				                     {text: myLabel.view_invoice, target: "_blank", url: "index.php?controller=pjInvoice&action=pjActionView&id={:uuid}&uuid={:order_id}"},
 				                     {text: myLabel.print_invoice, target: "_blank", url: "index.php?controller=pjInvoice&action=pjActionPrint&id={:uuid}&uuid={:order_id}"},
@@ -237,9 +252,7 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 				dataType: "json",
 				fields: ['order_id', 'issue_date', 'due_date', 'created', 'status', 'total'],
 				paginator: {
-					actions: [
-					   {text: myLabel.delete_title, url: "index.php?controller=pjInvoice&action=pjActionDeleteBulk", render: true, confirmation: myLabel.delete_body}
-					],
+					actions: $actions,
 					gotoPage: true,
 					paginate: true,
 					total: true,
@@ -284,7 +297,7 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 		
 		if ($("#grid_items").length > 0 && datagrid) {
 			var columns = [
-						    {text: myLabel.i_item, type: "text", sortable: true, editable: true, width: 330, editableWidth: 290, renderer: formatItem},
+						    {text: myLabel.i_item, type: "text", sortable: true, editable: false, width: 330, editableWidth: 290, renderer: formatItem},
 						    {text: myLabel.i_qty, type: "text", sortable: true, editable: false, width: 70, align: "right", renderer: formatQty},
 						    {text: myLabel.i_unit, type: "text", sortable: true, editable: false, width: 100, align: "right"},
 						    {text: myLabel.i_amount, type: "text", sortable: true, editable: false, width: 100, align: "right"}
@@ -293,7 +306,7 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 			if(pjGrid.o_use_qty_unit_price == false)
 			{
 				columns = [
-						    {text: myLabel.i_item, type: "text", sortable: true, editable: true, width: 400, editableWidth: 380, renderer: formatItem},
+						    {text: myLabel.i_item, type: "text", sortable: true, editable: false, width: 800, editableWidth: 580, renderer: formatItem},
 						    {text: myLabel.i_amount, type: "text", sortable: true, editable: false, width: 200, align: "right"}
 						];
 				fields = ['name', 'amount_formated'];
@@ -400,7 +413,7 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 				if (m !== null) {
 					data.id = m[1];
 				}
-				m = href.match(/uuid=(PNK-[A-Z]{2}\d{10})/);
+				m = href.match(/uuid=(\d{10})/);
 				if (m !== null) {
 					data.uuid = m[1];
 				}
@@ -408,13 +421,45 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 				$(this).closest('.pj-menu-list-wrap').hide();
 			}
 			return false;
+		}).on("click", '.pj-add-tax', function(e){
+			if (e && e.preventDefault) {
+				e.preventDefault();
+			}
+			var clone_text = $('#tblCloneTaxes').find('tbody').html(),
+				index = Math.ceil(Math.random() * 999999)
+			clone_text = clone_text.replace(/\{INDEX\}/g, 'cr_' + index);
+			$('#tblTaxes').find('tbody').append(clone_text);
+		}).on("click", '.pj-remove-tax', function(e){
+			if (e && e.preventDefault) {
+				e.preventDefault();
+			}
+			var $this = $(this),
+				tax_id = $this.attr('data-tax_id');
+			if(tax_id.indexOf("cr") == -1)
+			{
+				remove_tax_arr.push(tax_id);
+			}
+			$('#remove_tax_arr').val(remove_tax_arr.join("|"));
+			$this.closest('tr').remove();
+		}).on("click", '.chkTaxIsDefault', function(e){
+			var $id = $(this).attr('id');
+			if (this.checked) {
+				$('.chkTaxIsDefault').each(function() {
+					if ($(this).attr('id') != $id) {
+						$(this).prop('checked', false);
+					}
+				});
+			}
 		});
 		
 		$("li.plugin_view_invoice a").unbind('click');
 			
 		$(document).ajaxSuccess(function(event, xhr, settings, data) {
-			if (settings.url.match(/index\.php\?controller=pjInvoice&action=pjActionDeleteItem&id=\d+/) !== null && data.status && data.status === "OK" && data.total) {
-				$("#total").val(data.total.toFixed(2));
+			if (settings.url.match(/index\.php\?controller=pjInvoice&action=pjActionDeleteItem&id=\d+/) !== null && data.status && data.status === "OK" && data.data) {
+				$("#subtotal").val(data.data.subtotal);
+				$("#tax").val(data.data.tax);
+				$("#total").val(data.data.total);
+				$("#amount_due").val(data.data.amount_due);
 			}
 		});
 		
@@ -527,8 +572,11 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 					var validator = $form.validate(itemOpts);
 					if (validator.form()) {
 						$.post("index.php?controller=pjInvoice&action=pjActionAddItem", $form.serialize()).done(function (data) {
-							if (data.status === "OK" && data.total) {
-								$("#total").val(data.total.toFixed(2));
+							if (data.status === "OK" && data.data) {
+								$("#subtotal").val(data.data.subtotal);
+								$("#tax").val(data.data.tax);
+								$("#total").val(data.data.total);
+								$("#amount_due").val(data.data.amount_due);
 							}
 							var content = $grid.datagrid("option", "content");
 							$grid.datagrid("load", "index.php?controller=pjInvoice&action=pjActionGetItems&invoice_id=" + invoice_id, "id", "ASC", content.page, content.rowCount);
@@ -574,9 +622,15 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 				if ($form.length > 0 && validate) {
 					var validator = $form.validate(itemOpts);
 					if (validator.form()) {
-						$.post("index.php?controller=pjInvoice&action=pjActionEditItem", $form.serialize()).done(function () {
+						$.post("index.php?controller=pjInvoice&action=pjActionEditItem", $form.serialize()).done(function (data) {
 							var content = $grid.datagrid("option", "content");
 							$grid.datagrid("load", "index.php?controller=pjInvoice&action=pjActionGetItems&invoice_id=" + invoice_id, "id", "ASC", content.page, content.rowCount);
+							if (data.status === "OK" && data.data) {
+								$("#subtotal").val(data.data.subtotal);
+								$("#tax").val(data.data.tax);
+								$("#total").val(data.data.total);
+								$("#amount_due").val(data.data.amount_due);
+							}
 						}).always(function () {
 							$this.dialog("close");
 						});
@@ -613,6 +667,8 @@ var jQuery_1_8_2 = jQuery_1_8_2 || $.noConflict();
 			tinymce.init({
 			    selector: "textarea.mceEditor",
 			    theme: "modern",
+			    valid_elements : '*[*]',
+			    valid_children: "+body[style]",
 			    height: 700,
 			    plugins: [
 			         "advlist autolink link image lists charmap print preview hr anchor pagebreak",

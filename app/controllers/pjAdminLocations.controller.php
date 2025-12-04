@@ -14,7 +14,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->setAjax(true);
 		
-		if ($this->isXHR() && $this->isAdmin())
+		if ($this->isXHR() && ($this->isAdmin() || $this->isEditor()))
 		{
 			$response = array('status' => 'OK', 'code' => 200, 'text' => '');
 			if (!isset($_SESSION[$this->sessionLocation]) || !is_array($_SESSION[$this->sessionLocation]))
@@ -32,7 +32,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->setAjax(true);
 		
-		if ($this->isXHR() && $this->isAdmin())
+		if ($this->isXHR() && ($this->isAdmin() || $this->isEditor()))
 		{
 			if (!isset($_SESSION[$this->sessionLocation]) || empty($_SESSION[$this->sessionLocation]))
 			{
@@ -47,6 +47,18 @@ class pjAdminLocations extends pjAdmin
 				$data['icon'] = $STORE['location_icon'];
 				$data['order_index'] = $STORE['order_index'];
 				$data['color'] = isset($STORE['color']) ? $STORE['color'] : ':NULL';
+				$data['region'] = isset($STORE['location_region']) ? $STORE['location_region'] : ':NULL';
+				if (isset($STORE['address']) && !empty($STORE['address'])) {
+				    $pickup_latlng_arr = $this->getGeocode($STORE['address']);
+				    $data['address'] = $STORE['address'];
+				    $data['lat'] = $pickup_latlng_arr['lat'];
+				    $data['lng'] = $pickup_latlng_arr['lng'];
+				} else {
+				    $data['address'] = ':NULL';
+				    $data['lat'] = ':NULL';
+				    $data['lng'] = ':NULL';
+				}
+				
 				$id = pjLocationModel::factory($data)->insert()->getInsertId();
 				if ($id !== false && (int) $id > 0)
 				{
@@ -92,6 +104,17 @@ class pjAdminLocations extends pjAdmin
 								$d_data['icon'] = $STORE['icon'][$v];
 								$d_data['price_level'] = $STORE['price_level'][$v];
 								$d_data['order_index'] = (!empty($STORE['order_index'][$v])) ? $STORE['order_index'][$v] : ':NULL';
+								$d_data['region'] = isset($STORE['region'][$v]) ? $STORE['region'][$v] : ':NULL';
+								if (isset($STORE['dropoff_address'][$v]) && !empty($STORE['dropoff_address'][$v])) {
+								    $pickup_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
+								    $d_data['address'] = $STORE['dropoff_address'][$v];
+								    $d_data['lat'] = $pickup_latlng_arr['lat'];
+								    $d_data['lng'] = $pickup_latlng_arr['lng'];
+								} else {
+								    $d_data['address'] = ':NULL';
+								    $d_data['lat'] = ':NULL';
+								    $d_data['lng'] = ':NULL';
+								}
 								$dropoff_id = $pjDropoffModel->reset()->setAttributes($d_data)->insert()->getInsertId();
 								if ($dropoff_id !== false && (int) $dropoff_id > 0)
 								{
@@ -197,6 +220,17 @@ class pjAdminLocations extends pjAdmin
 				$data['icon'] = $STORE['location_icon'];
 				$data['order_index'] = $STORE['order_index'];
 				$data['color'] = isset($STORE['color']) ? $STORE['color'] : ':NULL';
+				$data['region'] = isset($STORE['location_region']) ? $STORE['location_region'] : ':NULL';
+				if (isset($STORE['address']) && !empty($STORE['address'])) {
+				    $pickup_latlng_arr = $this->getGeocode($STORE['address']);
+				    $data['address'] = $STORE['address'];
+				    $data['lat'] = $pickup_latlng_arr['lat'];
+				    $data['lng'] = $pickup_latlng_arr['lng'];
+				} else {
+				    $data['address'] = ':NULL';
+				    $data['lat'] = ':NULL';
+				    $data['lng'] = ':NULL';
+				}
 				$data['modified'] = date('Y-m-d H:i:s');
 				pjLocationModel::factory()->where('id', $STORE['id'])->limit(1)->modifyAll($data);
 				
@@ -218,6 +252,17 @@ class pjAdminLocations extends pjAdmin
 								$d_data['icon'] = $STORE['icon'][$v];
 								$d_data['price_level'] = $STORE['price_level'][$v];
 								$d_data['order_index'] = (!empty($STORE['order_index'][$v])) ? $STORE['order_index'][$v] : ':NULL';
+								$d_data['region'] = isset($STORE['region'][$v]) ? $STORE['region'][$v] : ':NULL';
+								if (isset($STORE['dropoff_address'][$v]) && !empty($STORE['dropoff_address'][$v])) {
+								    $pickup_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
+								    $d_data['address'] = $STORE['dropoff_address'][$v];
+								    $d_data['lat'] = $pickup_latlng_arr['lat'];
+								    $d_data['lng'] = $pickup_latlng_arr['lng'];
+								} else {
+								    $d_data['address'] = ':NULL';
+								    $d_data['lat'] = ':NULL';
+								    $d_data['lng'] = ':NULL';
+								}
 								$dropoff_id = $pjDropoffModel->reset()->setAttributes($d_data)->insert()->getInsertId();
 								if ($dropoff_id !== false && (int) $dropoff_id > 0)
 								{
@@ -251,6 +296,17 @@ class pjAdminLocations extends pjAdmin
 								$d_data['icon'] = $STORE['icon'][$v];
 								$d_data['price_level'] = $STORE['price_level'][$v];
 								$d_data['order_index'] = (!empty($STORE['order_index'][$v])) ? $STORE['order_index'][$v] : ':NULL';
+								$d_data['region'] = isset($STORE['region'][$v]) ? $STORE['region'][$v] : ':NULL';
+								if (isset($STORE['dropoff_address'][$v]) && !empty($STORE['dropoff_address'][$v])) {
+								    $pickup_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
+								    $d_data['address'] = $STORE['dropoff_address'][$v];
+								    $d_data['lat'] = $pickup_latlng_arr['lat'];
+								    $d_data['lng'] = $pickup_latlng_arr['lng'];
+								} else {
+								    $d_data['address'] = ':NULL';
+								    $d_data['lat'] = ':NULL';
+								    $d_data['lng'] = ':NULL';
+								}
 								$pjDropoffModel->reset()->where('id', $v)->limit(1)->modifyAll($d_data);
 				
 								foreach ($STORE['i18n'] as $locale => $locale_arr)
@@ -330,7 +386,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->setAjax(true);
 	
-		if ($this->isXHR() && $this->isAdmin())
+		if ($this->isXHR() && ($this->isAdmin() || $this->isEditor()))
 		{
 			$response = array('status' => 'OK', 'code' => 200, 'text' => '');
 			if (!isset($_SESSION[$this->sessionPrice]) || !is_array($_SESSION[$this->sessionPrice]))
@@ -348,7 +404,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->setAjax(true);
 	
-		if ($this->isXHR() && $this->isAdmin())
+		if ($this->isXHR() && ($this->isAdmin() || $this->isEditor()))
 		{
 			if (!isset($_SESSION[$this->sessionPrice]) || empty($_SESSION[$this->sessionPrice]))
 			{
@@ -408,7 +464,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->checkLogin();
 		
-		if ($this->isAdmin())
+		if ($this->isAdmin() || $this->isEditor())
 		{
 			if (isset($_POST['location_create']))
 			{
@@ -587,7 +643,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->checkLogin();
 		
-		if ($this->isAdmin())
+		if ($this->isAdmin() || $this->isEditor())
 		{
 			$this->appendJs('jquery.datagrid.js', PJ_FRAMEWORK_LIBS_PATH . 'pj/js/');
 			$this->appendJs('pjAdminLocations.js');
@@ -620,7 +676,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->checkLogin();
 		
-		if ($this->isAdmin())
+		if ($this->isAdmin() || $this->isEditor())
 		{
 			if (isset($_POST['location_update']))
 			{
@@ -707,7 +763,7 @@ class pjAdminLocations extends pjAdmin
 	{
 		$this->checkLogin();
 		
-		if ($this->isAdmin())
+		if ($this->isAdmin() || $this->isEditor())
 		{
 			$dropoff_arr = pjDropoffModel::factory()
 				->join('pjMultiLang', "t2.model='pjDropoff' AND t2.foreign_id=t1.id AND t2.field='location' AND t2.locale='".$this->getLocaleId()."'", 'left outer')

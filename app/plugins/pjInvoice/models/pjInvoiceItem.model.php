@@ -18,7 +18,7 @@ class pjInvoiceItemModel extends pjInvoiceAppModel
 		array('name' => 'description', 'type' => 'tinytext', 'default' => ':NULL'),
 		array('name' => 'qty', 'type' => 'decimal', 'default' => ':NULL'),
 		array('name' => 'unit_price', 'type' => 'decimal', 'default' => ':NULL'),
-		array('name' => 'amount', 'type' => 'decimal', 'default' => ':NULL')
+		array('name' => 'amount', 'type' => 'decimal', 'default' => ':NULL'),	    array('name' => 'tax_id', 'type' => 'tinyint', 'default' => '0'),
 	);
 	
 	public static function factory($attr=array())

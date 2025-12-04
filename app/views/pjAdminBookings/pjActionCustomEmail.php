@@ -36,13 +36,20 @@ if (isset($tpl['status']))
 	?>
 	<div class="ui-tabs ui-widget ui-widget-content ui-corner-all b10">
 		<ul class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all">
-			<li class="ui-state-default ui-corner-top ui-tabs-active ui-state-active"><a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionEmailReminder&amp;id=<?php echo $_GET['id']; ?>&amp;booking_id=<?php echo $_GET['booking_id']; ?>"><?php __('lblSendCustomEmail'); ?></a></li>
+			<li class="ui-state-default ui-corner-top ui-tabs-active ui-state-active">
+				<?php if (isset($_GET['type']) && $_GET['type'] == 'note') { ?>
+					<a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionCustomEmail&amp;type=note&amp;id=<?php echo $_GET['id']; ?>&amp;booking_id=<?php echo $_GET['booking_id']; ?>"><?php __('lblSendNote'); ?></a>
+				<?php } else { ?>
+					<a href="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionCustomEmail&amp;type=email&amp;id=<?php echo $_GET['id']; ?>&amp;booking_id=<?php echo $_GET['booking_id']; ?>"><?php __('lblSendCustomEmail'); ?></a>
+				<?php } ?>
+			</li>
 		</ul>
 	</div>
 	<form action="<?php echo $_SERVER['PHP_SELF']; ?>?controller=pjAdminBookings&amp;action=pjActionCustomEmail&amp;id=<?php echo $_GET['id']; ?>&amp;booking_id=<?php echo $_GET['booking_id']; ?>" method="post" class="form pj-form" id="frmSendCustomEmail">
 		<input type="hidden" name="email_custom" value="1" />
 		<input type="hidden" name="id" value="<?php echo $tpl['arr']['id']; ?>" />
 		<input type="hidden" name="locale_id" id="locale_id" value="<?php echo $locale; ?>" />
+		<input type="hidden" name="type" id="type" value="<?php echo @$_GET['type']; ?>" />
 		<?php if ((int) $tpl['option_arr']['o_multi_lang'] === 1 && count($tpl['lp_arr']) > 1) : ?>
 		<div class="multilang b10"></div>
 		<?php endif;?>
@@ -76,7 +83,7 @@ if (isset($tpl['status']))
                 <p class="pj-multilang-wrap" data-index="<?php echo $v['id']; ?>" style="display: <?php echo (int) $v['is_default'] === 0 ? 'none' : NULL; ?>">
                     <label class="title"><?php __('lblReminderMessage'); ?></label>
 					<span class="inline_block">
-						<textarea name="i18n[<?php echo $v['id']; ?>][message]" class="pj-form-field w550 h300 mceEditor"><?php echo htmlspecialchars(stripslashes(@$tpl['i18n_arr'][$v['id']]['message'])); ?></textarea>
+						<textarea name="i18n[<?php echo $v['id']; ?>][message]" class="pj-form-field w550 h300 <?php echo !isset($_GET['type']) || (isset($_GET['type']) && $_GET['type'] != 'note') ? ' mceEditor' : '';?>"><?php echo htmlspecialchars(stripslashes(@$tpl['i18n_arr'][$v['id']]['message'])); ?></textarea>
 						<?php if ((int) $tpl['option_arr']['o_multi_lang'] === 1 && count($tpl['lp_arr']) > 1) : ?>
                             <span class="pj-multilang-input"><img src="<?php echo PJ_INSTALL_URL . PJ_FRAMEWORK_LIBS_PATH . 'pj/img/flags/' . $v['file']; ?>" alt="" /></span>
                         <?php endif;?>

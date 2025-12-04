@@ -160,7 +160,17 @@ $payment_methods_desc = __('payment_methods_desc', true);
                 <div class="actions">
                     <button type="submit" class="btn medium color right btnBook" data-html_book="<?php __('front_btn_book_now'); ?>" data-html_book_pay="<?php __('front_btn_book_and_pay'); ?>"><?php echo $selected_pm == 'saferpay' ? __('front_btn_book_now', true) : __('front_btn_book_and_pay', true); ?></button>
                 </div>
+                <br style="clear: both;" />
             </form>
+            
+            <div class="pjCrBookingSesstionExpired" style="margin-top: 20px; display: none;">
+            	<div class="vc_message_box vc_message_box-standard vc_message_box-square vc_color-alert-warning">
+                	<div class="vc_message_box-icon"><i class="fas fa-info-circle"></i></div>
+                	<h2 id="booking_gtm"><?php __('front_booking_sesstion_expired_title'); ?></h2>
+    				<div style="padding-top: 5px;"><?php __('front_booking_sesstion_expired_desc'); ?></div>
+    				<div align="center" style="margin-top: 10px;"><button type="button" class="btn medium color right pjCrRestartBooking" style="float: none;"><?php __('front_btn_restart_booking'); ?></button></div>
+    			</div>
+			</div>
         <?php else: ?>
             <div class="trSystemMessage">
                 <?php __('front_error'); ?>

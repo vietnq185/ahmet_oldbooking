@@ -98,7 +98,8 @@ class pjUtil extends pjToolkit
 		}
 		$sub_total = round($sub_total);
         $tax = round($sub_total * $option_arr['o_tax_payment'] / 100);
-        $discount_arr = pjAppController::getDiscount($sub_total + $tax, $voucher_code, $option_arr['o_currency']);
+        //$discount_arr = pjAppController::getDiscount($sub_total + $tax, $voucher_code, $option_arr['o_currency']);
+        $discount_arr = pjAppController::getDiscount($sub_total, $voucher_code, $option_arr['o_currency']);
         $discount = $discount_arr['status'] == 'OK'? $discount_arr['discount']: 0;
         $discount = round($discount);
 		$total = round($sub_total + $tax - $discount);

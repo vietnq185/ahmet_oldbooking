@@ -78,7 +78,7 @@ class pjInvoiceModel extends pjInvoiceAppModel
 		array('name' => 's_url', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 's_date', 'type' => 'date', 'default' => ':NULL'),
 		array('name' => 's_terms', 'type' => 'text', 'default' => ':NULL'),
-		array('name' => 's_is_shipped', 'type' => 'tinyint', 'default' => 0)
+		array('name' => 's_is_shipped', 'type' => 'tinyint', 'default' => 0),	    array('name' => 'b_tax_number', 'type' => 'varchar', 'default' => ':NULL'),	    array('name' => 'voucher_code', 'type' => 'varchar', 'default' => ':NULL')
 	);
 	
 	protected $validate = array(

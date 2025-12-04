@@ -3,7 +3,11 @@
     <div class="wrap">
     	<div class="row">
         	<div class="full-width sum"><br/><br/>
-	        	<?php if ($hours < 24 || $tpl['arrivalNotice'] > 0) { ?>
+        		<?php if ((int)$tpl['arr']['paid_via_payment_link'] == 1) { ?>
+        			<div class="vc_message_box vc_message_box-standard vc_message_box-square vc_color-alert-success"><div class="vc_message_box-icon"><i class="fas fa-check-circle"></i></div><h2 id="booking_gtm"><?php echo str_replace('{ReferenceNumber}', $tpl['arr']['uuid'], __('front_step_booking_summary_2', true)); ?></h2>
+		           	<br/>
+					<p><?php echo str_replace('{ReferenceNumber}', $tpl['arr']['uuid'], __('front_step_booking_summary_2_desc', true)); ?></p></div>
+	        	<?php } elseif ($hours < 24 || $tpl['arrivalNotice'] > 0) { ?>
 					<div class="vc_message_box vc_message_box-standard vc_message_box-square vc_color-alert-success"><div class="vc_message_box-icon"><i class="fas fa-check-circle"></i></div><h2 id="booking_gtm"><?php echo str_replace('{ReferenceNumber}', $tpl['arr']['uuid'], __('front_step_booking_summary_1', true)); ?></h2>
 		           	<br/>
 		            <p><?php echo str_replace('{ReferenceNumber}', $tpl['arr']['uuid'], __('front_step_booking_summary_1_desc', true)); ?></p></div>
