@@ -2981,8 +2981,15 @@ class pjAdminBookings extends pjAdmin
             $data_update['dropoff_lat'] = $val['location_dropoff_lat'];
             $data_update['dropoff_lng'] = $val['location_dropoff_lng'];
             
-            $data_update['duration'] = $val['duration'];
-            $data_update['distance'] = $val['distance'];
+            if ((int)$val['duration'] <= 0 || (int)$val['distance'] <= 0) {
+                $geo = $this->getActualTravelTime($data_update);
+                $data_update['duration'] = $geo['duration'];
+                $data_update['distance'] = $geo['distance'];
+                pjDropoffModel::factory()->reset()->set('id', $val['dropoff_id'])->modify(array('duration' => $geo['duration'], 'distance' => $geo['distance']));
+            } else {
+                $data_update['duration'] = $val['duration'];
+                $data_update['distance'] = $val['distance'];
+            }
             
             $pjBookingModel->reset()->set('id', $val['id'])->modify($data_update);
             
@@ -2990,6 +2997,57 @@ class pjAdminBookings extends pjAdmin
         }
         
         pjAppController::jsonResponse(array('next_page' => (int)$get['page'] + 1));
+    }
+    
+    public function getActualTravelTime($params) {
+        $lat1 = $params['pickup_lat'];
+        $lon1 = $params['pickup_lng'];
+        $origin = "{$lat1},{$lon1}";
+        
+        $lat2 = $params['dropoff_lat'];
+        $lon2 = $params['dropoff_lng'];
+        $destination = "{$lat2},{$lon2}";
+        
+        $url = "https://maps.googleapis.com/maps/api/distancematrix/json?" .
+            "origins=" . urlencode($origin) .
+            "&destinations=" . urlencode($destination) .
+            "&key=" . $this->option_arr['o_google_api_key'] .
+            "&mode=driving" .
+            "&departure_time=now";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($http_code !== 200 || $response === false) {
+            return [
+                'duration' => 0,
+                'distance' => 0
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        $element = $data['rows'][0]['elements'][0];
+        
+        if ($element['status'] !== 'OK') {
+            return [
+                'duration' => 0,
+                'distance' => 0
+            ];
+        }
+        
+        $actualDuration = round((int)$element['duration']['value']/60);
+        $actualDistance = round((int)$element['distance']['value']/100);
+        
+        return [
+            'duration' => $actualDuration,
+            'distance' => $actualDistance
+        ];
+        
     }
 }
 ?>

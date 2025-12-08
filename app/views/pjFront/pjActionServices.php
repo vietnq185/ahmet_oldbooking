@@ -62,7 +62,7 @@ $date = pjUtil::formatDate($STORE['search']['date'], $tpl['option_arr']['o_date_
 	                       		<ul>
 	                                <li>
 	                                    <p>
-		                                    <i class="fas fa-user"></i> <?= str_replace('{NUMBER}', $v['passengers'], __('front_max_passengers', true, false)) ?>
+		                                    <i class="fas fa-user"></i> <?= str_replace('{NUMBER}', $v['passengers'], (int)$v['passengers'] > 8 ? __('front_max_passengers_over_8', true, false) : __('front_max_passengers', true, false)) ?>
 	                                    </p>
 	                                    <p>
 	                                    	<i class="fas fa-route"></i> <?= str_replace('{NUMBER}', $v['distance'], __('front_estimated_distance', true, false)) ?>
