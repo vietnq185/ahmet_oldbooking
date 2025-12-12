@@ -2003,6 +2003,15 @@ class pjFront extends pjAppController
                     $data['c_address'] = ':NULL';
                     $data['c_hotel'] = ':NULL';
                     $data['passengers'] = $returnData['passengers_return'];
+                    
+                    $data['pickup_address'] = $dropoff_arr['address'];
+                    $data['pickup_lat'] = $dropoff_arr['lat'];
+                    $data['pickup_lng'] = $dropoff_arr['lng'];
+                    
+                    $data['dropoff_address'] = $pickup_arr['address'];
+                    $data['dropoff_lat'] = $pickup_arr['lat'];
+                    $data['dropoff_lng'] = $pickup_arr['lng'];
+                    
 					$data['price'] = $price_arr['total']/2;
                     if (!$search_post['is_airport'] && $dropoff_arr['is_airport'] == 0) {
                      	$data['c_address'] = $returnData['c_address'];
@@ -2719,8 +2728,9 @@ class pjFront extends pjAppController
     	                        } else {
     	                            pjAppController::pjActionConfirmSend($this->option_arr, $arr, PJ_SALT, 'confirm', $arr['locale_id']);
     	                        }
+	                        } else { 
+	                           pjAppController::pjActionConfirmSend($this->option_arr, $arr, PJ_SALT, 'payment', $arr['locale_id']);
 	                        }
-	                        pjAppController::pjActionConfirmSend($this->option_arr, $arr, PJ_SALT, 'payment', $arr['locale_id']);
 	                        if ($arr['status'] == 'confirmed') {
 	                            $resp = pjApiSync::syncBooking($arr['id'], 'create', $this->option_arr);
     	                        if (isset($return_id) && (int)$return_id > 0) {

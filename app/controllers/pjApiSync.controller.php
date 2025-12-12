@@ -215,8 +215,7 @@ class pjApiSync extends pjAppController
 				break;
 			case 'update_latlng':
 			    $data = pjBookingModel::factory()
-			    ->select('t1.id, t1.pickup_lat, t1.pickup_lng, t1.dropoff_lat, t1.dropoff_lng, t1.pickup_address, t1.dropoff_address, t2.duration, t2.distance')
-			    ->join('pjDropoff', "t2.id=t1.dropoff_id", 'left outer')
+			    ->select('t1.id, t1.pickup_lat, t1.pickup_lng, t1.dropoff_lat, t1.dropoff_lng, t1.pickup_address, t1.dropoff_address, t1.duration, t1.distance, t1.region, t1.dropoff_region')
 			    ->find($id)->getData();
 			    foreach ($data as $k => $v) {
 			        if (empty($v)) {

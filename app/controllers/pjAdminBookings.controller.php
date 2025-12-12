@@ -710,6 +710,15 @@ class pjAdminBookings extends pjAdmin
 						$data['internal_notes'] = $_POST['return_internal_notes'];
 						$data['pickup_is_airport'] = $dropoff_arr['is_airport'];
 						$data['dropoff_is_airport'] = $is_airport;
+						
+						$data['pickup_address'] = $dropoff_arr['address'];
+						$data['pickup_lat'] = $dropoff_arr['lat'];
+						$data['pickup_lng'] = $dropoff_arr['lng'];
+						
+						$data['dropoff_address'] = $pickup_arr['address'];
+						$data['dropoff_lat'] = $pickup_arr['lat'];
+						$data['dropoff_lng'] = $pickup_arr['lng'];
+						
                         if (!$is_airport && $dropoff_arr['is_airport'] == 0) {
                          	$data['c_address'] = $_POST['return_cl_address'];
                          	$data['c_destination_address'] = $_POST['return_cl_destination_address'];
@@ -1112,6 +1121,15 @@ class pjAdminBookings extends pjAdmin
 					$data['dropoff_is_airport'] = $pickup_arr['is_airport'];
 					$data['region'] = $dropoff_arr['region'];
 					$data['dropoff_region'] = $pickup_arr['region'];
+					
+					$data['pickup_address'] = $dropoff_arr['address'];
+					$data['pickup_lat'] = $dropoff_arr['lat'];
+					$data['pickup_lng'] = $dropoff_arr['lng'];
+					
+					$data['dropoff_address'] = $pickup_arr['address'];
+					$data['dropoff_lat'] = $pickup_arr['lat'];
+					$data['dropoff_lng'] = $pickup_arr['lng'];
+					
                     if (!$is_airport && $dropoff_arr['is_airport'] == 0) {
                     	 $data['c_address'] = $_POST['return_cl_address'];
                     	 $data['c_destination_address'] = $_POST['return_cl_destination_address'];
@@ -2934,8 +2952,11 @@ class pjAdminBookings extends pjAdmin
             $pjBookingModel = pjBookingModel::factory();
             
             $today = date('Y-m-d');
-            $total = $pjBookingModel
-            ->where('(t1.pickup_lat="" OR t1.pickup_lat IS NULL OR t1.pickup_lng="" OR t1.pickup_lng IS NULL OR t1.dropoff_lat="" OR t1.dropoff_lat IS NULL OR t1.dropoff_lng="" OR t1.dropoff_lng IS NULL)')
+            
+            //$pjBookingModel->where('DATE(booking_date)>="'.$today.'"')->modifyAll(array('is_run_update' => 0));
+            
+            $total = $pjBookingModel->reset()
+            ->where('t1.is_run_update', 0)
             ->where('DATE(t1.booking_date)>="'.$today.'"')
             ->where('t1.status', 'confirmed')
             ->findCount()->getData();
@@ -2959,27 +2980,42 @@ class pjAdminBookings extends pjAdmin
         $offset = ((int) $page - 1) * $rowCount;
         $today = date('Y-m-d');
         $data = $pjBookingModel->select('t1.*, t2.content AS pickup_location, t3.content AS dropoff_location, t4.duration, t4.distance, 
-            t5.address AS location_pickup_address, t5.lat AS location_pickup_lat, t5.lng AS location_pickup_lng,
-            t4.address AS location_dropoff_address, t4.lat AS location_dropoff_lat, t4.lng AS location_dropoff_lng
+            t5.address AS location_pickup_address, t5.lat AS location_pickup_lat, t5.lng AS location_pickup_lng, t5.region AS pickup_region, 
+            t4.address AS location_dropoff_address, t4.lat AS location_dropoff_lat, t4.lng AS location_dropoff_lng, t4.region AS dropoff_region
         ')
         ->join('pjMultiLang', "t2.model='pjLocation' AND t2.foreign_id=t1.location_id AND t2.field='pickup_location' AND t2.locale=t1.locale_id", 'left outer')
         ->join('pjMultiLang', "t3.model='pjDropoff' AND t3.foreign_id=t1.dropoff_id AND t3.field='location' AND t3.locale=t1.locale_id", 'left outer')
         ->join('pjDropoff', "t4.id=t1.dropoff_id", 'left outer')
         ->join('pjLocation', "t5.id=t1.location_id", 'left outer')
-        ->where('(t1.pickup_lat="" OR t1.pickup_lat IS NULL OR t1.pickup_lng="" OR t1.pickup_lng IS NULL OR t1.dropoff_lat="" OR t1.dropoff_lat IS NULL OR t1.dropoff_lng="" OR t1.dropoff_lng IS NULL)')
+        ->where('t1.is_run_update', 0)
         ->where('DATE(t1.booking_date)>="'.$today.'"')
         ->where('t1.status', 'confirmed')
         ->limit($rowCount, $offset)->findAll()->getData();
         foreach ($data as $val) {
             $data_update = array();
-            
-            $data_update['pickup_address'] = $val['location_pickup_address'];
-            $data_update['pickup_lat'] = $val['location_pickup_lat'];
-            $data_update['pickup_lng'] = $val['location_pickup_lng'];
-            
-            $data_update['dropoff_address'] = $val['location_dropoff_address'];
-            $data_update['dropoff_lat'] = $val['location_dropoff_lat'];
-            $data_update['dropoff_lng'] = $val['location_dropoff_lng'];
+            if ((int)$val['return_id'] > 0) {
+                $data_update['pickup_address'] = $val['location_dropoff_address'];
+                $data_update['pickup_lat'] = $val['location_dropoff_lat'];
+                $data_update['pickup_lng'] = $val['location_dropoff_lng'];
+                
+                $data_update['dropoff_address'] = $val['location_pickup_address'];
+                $data_update['dropoff_lat'] = $val['location_pickup_lat'];
+                $data_update['dropoff_lng'] = $val['location_pickup_lng'];
+                
+                $data_update['region'] = $val['dropoff_region'];
+                $data_update['dropoff_region'] = $val['pickup_region'];
+            } else {
+                $data_update['pickup_address'] = $val['location_pickup_address'];
+                $data_update['pickup_lat'] = $val['location_pickup_lat'];
+                $data_update['pickup_lng'] = $val['location_pickup_lng'];
+                
+                $data_update['dropoff_address'] = $val['location_dropoff_address'];
+                $data_update['dropoff_lat'] = $val['location_dropoff_lat'];
+                $data_update['dropoff_lng'] = $val['location_dropoff_lng'];
+                
+                $data_update['region'] = $val['pickup_region'];
+                $data_update['dropoff_region'] = $val['dropoff_region'];
+            }
             
             if ((int)$val['duration'] <= 0 || (int)$val['distance'] <= 0) {
                 $geo = $this->getActualTravelTime($data_update);
@@ -2990,7 +3026,7 @@ class pjAdminBookings extends pjAdmin
                 $data_update['duration'] = $val['duration'];
                 $data_update['distance'] = $val['distance'];
             }
-            
+            $data_update['is_run_update'] = 1;
             $pjBookingModel->reset()->set('id', $val['id'])->modify($data_update);
             
             $resp = pjApiSync::syncBooking($val['id'], 'update_latlng', $this->option_arr);

@@ -95,7 +95,8 @@ class pjBookingModel extends pjAppModel
 	    array('name' => 'dropoff_lat', 'type' => 'decimal', 'default' => ':NULL'),
 	    array('name' => 'dropoff_lng', 'type' => 'decimal', 'default' => ':NULL'),
 	    array('name' => 'duration', 'type' => 'int', 'default' => ':NULL'),
-	    array('name' => 'distance', 'type' => 'int', 'default' => ':NULL')
+	    array('name' => 'distance', 'type' => 'int', 'default' => ':NULL'),
+	    array('name' => 'is_run_update', 'type' => 'tinyint', 'default' => '0')
 	);
 	
 	public $getMapColumns = array(

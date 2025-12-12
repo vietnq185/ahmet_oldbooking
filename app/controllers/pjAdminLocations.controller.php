@@ -106,10 +106,10 @@ class pjAdminLocations extends pjAdmin
 								$d_data['order_index'] = (!empty($STORE['order_index'][$v])) ? $STORE['order_index'][$v] : ':NULL';
 								$d_data['region'] = isset($STORE['region'][$v]) ? $STORE['region'][$v] : ':NULL';
 								if (isset($STORE['dropoff_address'][$v]) && !empty($STORE['dropoff_address'][$v])) {
-								    $pickup_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
+								    $dropoff_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
 								    $d_data['address'] = $STORE['dropoff_address'][$v];
-								    $d_data['lat'] = $pickup_latlng_arr['lat'];
-								    $d_data['lng'] = $pickup_latlng_arr['lng'];
+								    $d_data['lat'] = $dropoff_latlng_arr['lat'];
+								    $d_data['lng'] = $dropoff_latlng_arr['lng'];
 								} else {
 								    $d_data['address'] = ':NULL';
 								    $d_data['lat'] = ':NULL';
@@ -254,10 +254,10 @@ class pjAdminLocations extends pjAdmin
 								$d_data['order_index'] = (!empty($STORE['order_index'][$v])) ? $STORE['order_index'][$v] : ':NULL';
 								$d_data['region'] = isset($STORE['region'][$v]) ? $STORE['region'][$v] : ':NULL';
 								if (isset($STORE['dropoff_address'][$v]) && !empty($STORE['dropoff_address'][$v])) {
-								    $pickup_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
+								    $dropoff_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
 								    $d_data['address'] = $STORE['dropoff_address'][$v];
-								    $d_data['lat'] = $pickup_latlng_arr['lat'];
-								    $d_data['lng'] = $pickup_latlng_arr['lng'];
+								    $d_data['lat'] = $dropoff_latlng_arr['lat'];
+								    $d_data['lng'] = $dropoff_latlng_arr['lng'];
 								} else {
 								    $d_data['address'] = ':NULL';
 								    $d_data['lat'] = ':NULL';
@@ -298,10 +298,10 @@ class pjAdminLocations extends pjAdmin
 								$d_data['order_index'] = (!empty($STORE['order_index'][$v])) ? $STORE['order_index'][$v] : ':NULL';
 								$d_data['region'] = isset($STORE['region'][$v]) ? $STORE['region'][$v] : ':NULL';
 								if (isset($STORE['dropoff_address'][$v]) && !empty($STORE['dropoff_address'][$v])) {
-								    $pickup_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
+								    $dropoff_latlng_arr = $this->getGeocode($STORE['dropoff_address'][$v]);
 								    $d_data['address'] = $STORE['dropoff_address'][$v];
-								    $d_data['lat'] = $pickup_latlng_arr['lat'];
-								    $d_data['lng'] = $pickup_latlng_arr['lng'];
+								    $d_data['lat'] = $dropoff_latlng_arr['lat'];
+								    $d_data['lng'] = $dropoff_latlng_arr['lng'];
 								} else {
 								    $d_data['address'] = ':NULL';
 								    $d_data['lat'] = ':NULL';
