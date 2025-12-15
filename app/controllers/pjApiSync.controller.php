@@ -245,10 +245,22 @@ class pjApiSync extends pjAppController
 				$pjHttp->setData($data);
 		        $pjHttp->setMethod('POST');
 				break;
+			case 'update_flag_synchronized':
+			    $data = array();
+			    $data['id'] = $id;
+			    $data['sync_action'] = $action;
+			    $data['domain'] = PJ_INSTALL_URL;
+			    $pjHttp->setData($data);
+			    $pjHttp->setMethod('POST');
+			    break;
 		}
 		$pjHttp->curlRequest($option_arr['o_driver_script_path'].'/index.php?controller=pjApiSync&action=syncBooking');
 		$response = $pjHttp->getResponse();
 	    $resp = json_decode($response, true);
+	    
+	    if ($action == 'create' && isset($resp['status']) && $resp['status'] == 'OK') {
+	        pjBookingModel::factory()->reset()->set('id', $id)->modify(array('is_synchronized' => 1));
+	    }
 	    return $resp;
     }
     

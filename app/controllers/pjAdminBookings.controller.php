@@ -218,6 +218,7 @@ class pjAdminBookings extends pjAdmin
 			}
 
 			$paymentMethodsShort = __('payment_methods_short', true);
+			$_yesno = __('_yesno', true);
 			foreach($data as $k => $v)
 			{
 				$client_arr = array();
@@ -266,6 +267,7 @@ class pjAdminBookings extends pjAdmin
 				    $booking_color = '';
 				}
 				$v['booking_color'] = $booking_color;
+				$v['is_synchronized'] = @$_yesno[$v['is_synchronized']];
 				
 				$data[$k] = $v;
 			}
@@ -3085,5 +3087,55 @@ class pjAdminBookings extends pjAdmin
         ];
         
     }
+    
+    
+    public function pjActionUpdateFlagSynchronized()
+    {
+        $this->checkLogin();
+        
+        if ($this->isAdmin())
+        {
+            $pjBookingModel = pjBookingModel::factory();
+            
+            //$pjBookingModel->where('DATE(booking_date)>="'.$today.'"')->modifyAll(array('is_run_update' => 0));
+            
+            $total = $pjBookingModel->reset()
+            ->where('t1.is_synchronized', 0)
+            ->where('t1.status', 'confirmed')
+            ->findCount()->getData();
+            $rowCount = 15;
+            $pages = ceil($total / $rowCount);
+            $this->set('pages', $pages);
+            $this->set('total', $total);
+            
+            $this->appendJs('pjAdminBookings.js');
+        } else {
+            $this->set('status', 2);
+        }
+    }
+    
+    public function pjActionProcessUpdateFlagSynchronized() {
+        $this->setAjax(true);
+        $get = $_GET;
+        $pjBookingModel = pjBookingModel::factory();
+        $rowCount = 15;
+        $page = isset($get['page']) && (int) $get['page'] > 0 ? intval($get['page']) : 1;
+        $offset = ((int) $page - 1) * $rowCount;
+        $today = date('Y-m-d');
+        $data = $pjBookingModel
+        ->where('t1.is_synchronized', 0)
+        ->where('t1.status', 'confirmed')
+        ->orderBy('t1.id DESC')
+        ->limit($rowCount, $offset)->findAll()->getData();
+        foreach ($data as $val) {
+            $resp = pjApiSync::syncBooking($val['id'], 'update_flag_synchronized', $this->option_arr);
+            if (isset($resp['status']) && $resp['status'] == 'OK') {
+                $pjBookingModel->reset()->set('id', $val['id'])->modify(array('is_synchronized' => 1));
+            }
+        }
+        
+        pjAppController::jsonResponse(array('next_page' => (int)$get['page'] + 1));
+    }
+    
 }
 ?>
