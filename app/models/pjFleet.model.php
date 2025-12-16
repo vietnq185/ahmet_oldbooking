@@ -37,6 +37,7 @@ class pjFleetModel extends pjAppModel
 		array('name' => 'thumb_path', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'image_name', 'type' => 'varchar', 'default' => ':NULL'),
 		array('name' => 'status', 'type' => 'enum', 'default' => 'T'),
+	    array('name' => 'status_on_preselected_route', 'type' => 'tinyint', 'default' => '1'),
 		array('name' => 'order_index', 'type' => 'int', 'default' => ':NULL'),
 		array('name' => 'modified', 'type' => 'datetime', 'default' => ':NOW()')
 	);

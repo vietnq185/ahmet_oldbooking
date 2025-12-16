@@ -62,6 +62,17 @@ if (isset($tpl['status']))
 				</span>
 			</p>
 			
+			<p>
+				<label class="title" for="order_index"><?php __('lblStatusOnPreSelectedRoutes'); ?></label>
+				<span class="inline_block">
+					<select name="status_on_preselected_route" class="pj-form-field">
+						<?php foreach (__('_status_on_preselected_route', true) as $k => $v) { ?>
+							<option value="<?php echo $k;?>" <?php echo $k == 1 ? 'selected="selected"' : '';?>><?php echo $v;?></option>
+						<?php } ?>
+					</select>
+				</span>
+			</p>
+			
             <!-- Price level 1 -->
             <?php include_once PJ_VIEWS_PATH . 'pjAdminFleets/elements/price_level_1.php';?>
             

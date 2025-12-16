@@ -839,7 +839,11 @@ class pjFront extends pjAppController
 					$dropoff_id = $search_post['dropoff_id'];
                     list($passengers_from, $passengers_to) = explode('-', !empty($search_post['passengers_from_to']) ? $search_post['passengers_from_to'] : '0-0');
 					
-					$pjFleetModel = pjFleetModel::factory()
+                    $pjFleetModel = pjFleetModel::factory();
+                    if (!isset($search_post['date']) || (isset($search_post['date']) && empty($search_post['date']))) {
+                        $pjFleetModel->where('t1.status_on_preselected_route', 1);
+                    }
+                    $pjFleetModel = $pjFleetModel
 						->join('pjMultiLang', "t2.model='pjFleet' AND t2.foreign_id=t1.id AND t2.field='fleet' AND t2.locale='".$this->getLocaleId()."'", 'left outer')
 						->join('pjMultiLang', "t3.model='pjFleet' AND t3.foreign_id=t1.id AND t3.field='description' AND t3.locale='".$this->getLocaleId()."'", 'left outer')
 						->join('pjPrice', "t1.id=t4.fleet_id", 'inner')
