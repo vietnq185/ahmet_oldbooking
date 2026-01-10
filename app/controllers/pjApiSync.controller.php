@@ -258,7 +258,7 @@ class pjApiSync extends pjAppController
 		$response = $pjHttp->getResponse();
 	    $resp = json_decode($response, true);
 	    
-	    if ($action == 'create' && isset($resp['status']) && $resp['status'] == 'OK') {
+	    if (in_array($action, array('create','update')) && isset($resp['status']) && $resp['status'] == 'OK') {
 	        pjBookingModel::factory()->reset()->set('id', $id)->modify(array('is_synchronized' => 1));
 	    }
 	    return $resp;

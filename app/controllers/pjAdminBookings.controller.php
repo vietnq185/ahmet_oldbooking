@@ -1515,7 +1515,7 @@ class pjAdminBookings extends pjAdmin
 				->orderBy("t1.order ASC, subject ASC")
 				->findAll()->getData();
 				$this->set('ws_arr', $ws_arr);
-
+				
 				$this->appendJs('chosen.jquery.min.js', PJ_THIRD_PARTY_PATH . 'chosen/');
 				$this->appendCss('chosen.css', PJ_THIRD_PARTY_PATH . 'chosen/');
 				$this->appendJs('jquery-ui-sliderAccess.js', PJ_THIRD_PARTY_PATH . 'timepicker/');
@@ -1740,6 +1740,16 @@ class pjAdminBookings extends pjAdmin
                     ;
                 }
                 $locale_id = isset($_POST['locale_id']) && (int)$_POST['locale_id'] > 0 ? (int)$_POST['locale_id'] : $this->getLocaleId();
+                
+                if (isset($_POST['invoice_id']) && (int)$_POST['invoice_id'] > 0) {
+                    $pdf_invoice = $this->generateInvoicePdf($_POST['invoice_id'], $this->option_arr, PJ_SALT, $locale_id, false);
+                    $pdf_invoice = PJ_INSTALL_PATH.'app/web/upload/invoices/'. $pdf_invoice;
+                    if (is_file($pdf_invoice)) {
+                        $pjEmail->detach($pdf_invoice);
+                        $pjEmail->attach($pdf_invoice);
+                    }
+                }
+                
                 $pjEmail->setContentType('text/html');
                 $pjEmail
                     ->setTo($_POST['to'])
@@ -1753,12 +1763,23 @@ class pjAdminBookings extends pjAdmin
                         'user_id' => $this->getUserId()
                     );
                     pjBookingHistoryModel::factory()->setAttributes($data_history)->insert();
-                    
-                    $err = 'AB09';
+                    if (isset($_POST['invoice_id']) && (int)$_POST['invoice_id'] > 0) {
+                        $err = 'AB48';
+                    } else {
+                        $err = 'AB09';
+                    }
                 } else {
-                    $err = 'AB10';
+                    if (isset($_POST['invoice_id']) && (int)$_POST['invoice_id'] > 0) {
+                        $err = 'AB49';
+                    } else {
+                        $err = 'AB10';
+                    }
                 }
-                pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionIndex&err=$err");
+                if (isset($_POST['invoice_id']) && (int)$_POST['invoice_id'] > 0) {
+                    pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjInvoice&action=pjActionUpdate&id=".$_POST['invoice_id']."&err=$err");
+                } else {
+                    pjUtil::redirect($_SERVER['PHP_SELF'] . "?controller=pjAdminBookings&action=pjActionIndex&err=$err");
+                }
             } else {
 
                 $arr = pjBookingModel::factory()
@@ -1787,11 +1808,17 @@ class pjAdminBookings extends pjAdmin
 				foreach ($locale_arr as $item)
 				{
 					$lp_arr[$item['id']."_"] = $item['file'];
-					
-					$lang_subject = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $item['id']), $i18n[$item['id']]['o_email_payment_subject']);
+					if (isset($_GET['invoice_id']) && (int)$_GET['invoice_id'] > 0) {
+					    $lang_subject = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $item['id']), $i18n[$item['id']]['o_email_send_pdf_subject']);
+					} else {
+					    $lang_subject = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $item['id']), $i18n[$item['id']]['o_email_payment_subject']);
+					}
 					$i18n_arr[$item['id']]['subject'] = $lang_subject;
-					
-					$lang_message = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $item['id']), $i18n[$item['id']]['o_email_payment_message']);
+					if (isset($_GET['invoice_id']) && (int)$_GET['invoice_id'] > 0) {
+					    $lang_message = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $item['id']), $i18n[$item['id']]['o_email_send_pdf_message']);
+					} else {
+					    $lang_message = pjAppController::replaceTokens($arr, pjAppController::getTokens($this->option_arr, $arr, PJ_SALT, $item['id']), $i18n[$item['id']]['o_email_payment_message']);
+					}
 					$i18n_arr[$item['id']]['message'] = $lang_message;
 				}
 				$this->set('i18n_arr', $i18n_arr);
@@ -3137,5 +3164,9 @@ class pjAdminBookings extends pjAdmin
         pjAppController::jsonResponse(array('next_page' => (int)$get['page'] + 1));
     }
     
+    public function testInvoice() {
+        $pdf = $this->generateInvoicePdf($_GET['id'], $this->option_arr, PJ_SALT, $this->getLocaleId(), true);
+        exit;
+    }
 }
 ?>
